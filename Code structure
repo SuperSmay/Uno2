@@ -1,0 +1,3 @@
+client - handles choosing a command/action to execute
+commands - handles executing and repsonding to user commands
+gameActions - handles game actions

@@ -1,0 +1,28 @@
+active game dict[channelID : game]   
+    game class
+        game state info
+        hosted channel id 
+        guild id 
+        player object dict[userID : player object]
+            player objects
+                user id 
+                player hand list[]
+                    card objects
+                        card image
+                        card emoji
+                        card face
+                        card color
+                user game message ids
+        deck
+            card list
+                card objects
+activeMessageIDs{messageID : messageObject} - stores messageIDs for interactable messages along with the object associated with it
+
+ruleset json file
+    channelID   
+        cards per hand : int
+        jumps in : bool
+        stacking : bool
+        forceplay : bool
+        draw to match : bool
+        

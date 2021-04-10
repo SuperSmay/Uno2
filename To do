@@ -1,0 +1,27 @@
+
+
+
+
+
+draw cards
+stacks
+7-0
+jump in
+
+
+
+player profiles
+
+
+
+BUGS:
+
+Game embed shows channelID instead of name
+Hand embed shows user tag id instead of name
+/start reply should be deleted once the game starts
+wild card messages missing capitalization
+
+
+
+Fixed...? 
+Other players card count shown as zero in dm message 

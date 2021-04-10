@@ -5,3 +5,4 @@ for item in coolList:
         coolList.remove(item+1)
 
 print(coolList)
+print(coolList)

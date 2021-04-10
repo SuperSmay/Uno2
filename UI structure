@@ -1,0 +1,20 @@
+Game embed
+    Whos turn it is
+    Current card
+    Last important event
+    Channel for game
+
+Hand embed
+    Hand at the top
+    Selected card is larger
+    Arrow reactions to pick left/right card
+    Dot reaction to play
+    Uno card reaction for draw pile
+
+Pop-up embed (working title)
+    Jump in question
+    Wildcard/plus 4 color
+
+Other - Implementation: When it is your turn the bot will send a message sayung such. Then when the turn is over it will update the message to a blank emote. If the user does an invalid action then update the message to say its not your turn for two seconds (to avoid new ping)
+    "Its not your turn" messages that dissapear after a second or two
+    "Its your turn" messages that dissapear when its not your turn and ping you when it is 
