@@ -1,11 +1,11 @@
 import asyncio
-from reactions import hand
+from client.reactions import hand
 import discord
 import time
-from globalVariables import openGames, openLobbies, playersInGame, playersInLobby, reactionMessageIDs
+from storage.globalVariables import openGames, openLobbies, playersInGame, playersInLobby, reactionMessageIDs
 import random
 import json
-import cardDictionaries
+import storage.cardDictionaries as cardDictionaries
 
 class Game:
     def __init__(self, gameLobby):

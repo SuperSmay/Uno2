@@ -5,7 +5,7 @@ import discord
 import discord.ext
 import client.commands as commands
 import client.reactions as reactions
-from client.globalVariables import reactionMessageIDs, openLobbies
+from storage.globalVariables import reactionMessageIDs, openLobbies
 from client.prefix import getPrefix
 import client.backgroundTasks as backgroundTasks
 from discord_slash import SlashCommand
