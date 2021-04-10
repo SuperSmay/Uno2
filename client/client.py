@@ -3,11 +3,11 @@
 import asyncio
 import discord
 import discord.ext
-import commands
-import reactions
-from globalVariables import reactionMessageIDs, openLobbies
-from prefix import getPrefix
-import backgroundTasks
+import client.commands as commands
+import client.reactions as reactions
+from client.globalVariables import reactionMessageIDs, openLobbies
+from client.prefix import getPrefix
+import client.backgroundTasks as backgroundTasks
 from discord_slash import SlashCommand
 from discord_slash.utils import manage_commands
 import logging
