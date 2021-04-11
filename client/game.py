@@ -10,10 +10,8 @@ import client.messageClasses as messageClasses
 
 class Game:
     def __init__(self, gameLobby):
-        
-
         self.channelID = gameLobby.channelID
-        self.time = time.time()
+        self.time = time.time()  #Time game was started
         self.rules = {}
         self.players = []
         self.turnIndex = 0
@@ -25,33 +23,20 @@ class Game:
             playersInGame[playerID] = self.channelID
         openGames[self.channelID] = self
         self.deck = Deck()
-        
-        
-        #print(self.channelID, self.players, self.time, self.deck, self.rules)
 
     async def startGame(self, client):
-
-        print("Starting game...")
-
         self.currentCard = self.deck.drawCard()
-
         while self.currentCard.isColorChoice:
             self.deck.returnCard(self.currentCard)
             self.currentCard = self.deck.drawCard()
-
-        print("First card found, starting players")
-
         for player in self.players:  #For each player in the list of players
             await player.start(client)  #Start that player
-        print("Getting channel")
         channel = await client.fetch_channel(self.channelID)  #Get channel
-        print("Sending message")
         gameMessage = await channel.send(embed = await self.gameStateEmbed(isDM = False, player = None, statusMessage = "Game started", client = client), content = "Game started")  #Send game message to channel
         self.gameMessageID = gameMessage.id  #Sets game messageID
-        
-        #Start first turn, either through the turn change function(todo, probably better) or just by initializing manually
 
     async def gameStateEmbed(self, isDM, player, statusMessage, client):  #Creates the content for the messages sent to a players DMs
+
         async def playerListString():
             playerList = []
             index = self.turnIndex
@@ -66,35 +51,27 @@ class Game:
             playerList = "\n".join(playerList)
             return playerList    
         
-        if isDM:             
-            if self.players[self.turnIndex].playerID == player.playerID: turnStatus = "**It's your turn!**"
-            else: 
-                currentTurnUser = await self.currentTurnUser(client)
-                turnStatus = f"It's {currentTurnUser.name}'s turn!"
-            description = f"**Players:**\n{await playerListString()}\n{statusMessage}\n\n{turnStatus}"
-            if not self.gameRunning:
-                description = f"**{statusMessage}**"
-            embed = discord.Embed(title = f"Uno2 game in <#{self.channelID}>", description = description, color = self.currentCard.colorCode())
-            #embed.set_thumbnail(url = cardImages[self.topCard])
-        else: 
-            description = f"**Players:**\n{await playerListString()}\n{statusMessage}"
-            if not self.gameRunning:
-                description = f"**{statusMessage}**"
-            embed = discord.Embed(title = f"Uno2 game in <#{self.channelID}>", description = description, color = self.currentCard.colorCode())
-            #embed.set_thumbnail(url = cardImages[self.topCard])
+        currentTurnUser = await self.currentTurnUser(client)
+        turnStatus = f"It's {currentTurnUser.name}'s turn!"
+        if isDM:  #If the message is being sent in a DM, the description is changed
+            if self.players[self.turnIndex].playerID == player.playerID:  #If its the current players turn, then change the message to say that
+                turnStatus = "**It's your turn!**"
+                if not self.gameRunning: 
+                    statusMessage = "**You won the game!**"
+        if not self.gameRunning: description = f"**Players:**\n{await playerListString()}\n{statusMessage}"
+        else: description = f"**Players:**\n{await playerListString()}\n{statusMessage}\n\n{turnStatus}"
+        embed = discord.Embed(title = f"Uno2 game in <#{self.channelID}>", description = description, color = self.currentCard.colorCode())
         embed.set_thumbnail(url = self.currentCard.image)
         return embed
 
-    
-
-    async def currentTurnUser(self, client):
+    async def currentTurnUser(self, client):  #Get the user object for the player who's turn it is
         return await client.fetch_user(self.players[self.turnIndex].playerID)
 
-    async def channelName(self, client):
+    async def channelName(self, client):  #Get the name of the channel the game is in
         channel = await client.fetch_channel(self.channelID)
         return channel.name
 
-    def validCard(self, card):
+    def validCard(self, card):  #If the card is a valid one to play, return true
         if card.face == self.currentCard.face or card.color == self.currentCard.color or card.color == "black":
             return True
         else:
@@ -110,10 +87,7 @@ class Game:
         self.currentCard = selectedCard
         reverse = False
         count = 1
-
-        
-        
-        if selectedCard.isColorChoice:
+        if selectedCard.isColorChoice:  #If the card is a color choice card (wild card), then send the wild message
             player.wildMessage = messageClasses.WildMessage(card = selectedCard, player = player, game = self)
             await player.wildMessage.sendMessage(client = client)
             count = 0
@@ -122,7 +96,7 @@ class Game:
             count = 2
         elif selectedCard.face == "reverse":
             reverse = True
-
+        #TODO - If card is a plus card, check stack rule then start stack, or if source is stack then add to the current stack
         statusMessage = "Card played"  #TEMP
         await self.updateGame(reverse = reverse)
         await self.updateTurn(count = count)
@@ -133,7 +107,6 @@ class Game:
         if reverse:
             self.reverse = (not self.reverse)
         
-
     async def updateTurn(self, count):
         self.turnIndex += count
         if self.turnIndex >= len(self.players):
@@ -180,15 +153,12 @@ class Player:
         self.selectedIndex = 0
         self.state = "card"
 
-
     async def start(self, client):
         #Create hand for player
         i = 0
         while i < getRules(self.game.channelID)["startingCards"]:
             self.hand.append(self.game.deck.drawCard())
             i += 1
-        
-
         user = await client.fetch_user(self.playerID)  #Get the user from discord
         gameMessage = await user.send(embed = await self.game.gameStateEmbed(isDM = True, player = self, statusMessage = "Game started", client = client))  #Send the user the game message
         self.gameMessageID = gameMessage.id  #Set the players game message ID
@@ -226,9 +196,6 @@ class Stack:
         while i > 0:
             self.game.players[self.game.currentTurnIndex].drawCard(client)
             i -= 1
-
-
-
 class Deck:
     def __init__(self):
         colors = ["red", "yellow", "green", "blue"]
@@ -253,8 +220,6 @@ class Deck:
         if not card.returnable == False:
             self.cards.append(card)
 
-
-
 def getRules(channelID):
     rules = json.load(open("storage/channelRulesets.json", "r"))
     if str(channelID) in rules.keys():
@@ -270,4 +235,3 @@ def getRules(channelID):
         rules[channelID] = ruleset
         json.dump(rules, open("storage/channelRulesets.json", "w"))
         return rules[str(channelID)]
-
