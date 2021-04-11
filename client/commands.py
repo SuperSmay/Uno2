@@ -1,9 +1,9 @@
 import discord
 from discord import channel
 import time
-from storage.globalVariables import openGames, openLobbies, playersInGame, playersInLobby
-from client.classes import HelpMessage
-from client.gameClass import channelInGame, channelHasLobby, playerInGame, playerInLobby, GameLobby, Game
+from storage.globalVariables import openGames, openLobbies, playersInGame, playersInLobby, channelInGame, channelHasLobby, playerInGame, playerInLobby
+from client.messageClasses import HelpMessage
+from client.game import GameLobby, Game
 
 async def prefixCommand(ctx):
     await ctx.send.changePrefix(ctx)

@@ -1,11 +1,12 @@
 import asyncio
-from client.reactions import hand
 import discord
 import time
-from storage.globalVariables import openGames, openLobbies, playersInGame, playersInLobby, reactionMessageIDs
+from storage.globalVariables import openGames, openLobbies, playersInGame, playersInLobby, channelInGame, channelHasLobby, playerInGame, playerInLobby
 import random
 import json
 import storage.cardDictionaries as cardDictionaries
+from client.cardClass import Card
+import client.messageClasses as messageClasses
 
 class Game:
     def __init__(self, gameLobby):
@@ -113,7 +114,7 @@ class Game:
         
         
         if selectedCard.isColorChoice:
-            player.wildMessage = wildMessage(card = selectedCard, player = player, game = self)
+            player.wildMessage = messageClasses.WildMessage(card = selectedCard, player = player, game = self)
             await player.wildMessage.sendMessage(client = client)
             count = 0
             statusMessage = "A color is being chosen"
@@ -157,12 +158,6 @@ class Game:
             del openGames[self.channelID]
             channel = await client.fetch_channel(self.channelID)
             await channel.send("Game closed due to all players leaving")
-
-        
-
-
-   
-
 class GameLobby:
     def __init__(self, ctx):
         self.channelID = ctx.channel.id
@@ -197,7 +192,7 @@ class Player:
         user = await client.fetch_user(self.playerID)  #Get the user from discord
         gameMessage = await user.send(embed = await self.game.gameStateEmbed(isDM = True, player = self, statusMessage = "Game started", client = client))  #Send the user the game message
         self.gameMessageID = gameMessage.id  #Set the players game message ID
-        self.handMessage = handMessage(self, self.game)
+        self.handMessage = messageClasses.handMessage(self, self.game)
         await self.handMessage.sendMessage(client)
 
     async def drawCard(self, client):
@@ -207,112 +202,6 @@ class Player:
         self.hand.append(card)
         #Edit message
         await self.handMessage.updateMessage(0, client)       
-       
-        
-    
-    
-        
-
-class handMessage:
-    def __init__(self, player, game):
-        self.userID = player.playerID
-        self.type = "hand"
-        self.player = player
-        self.game = game
-
-    async def sendMessage(self, client):
-        user = await client.fetch_user(self.userID)
-        message = await user.send(embed = await self.handEmbed())
-        await message.add_reaction("⏪")
-        await message.add_reaction("◀️")
-        await message.add_reaction("⏺️")
-        await message.add_reaction("▶️")
-        await message.add_reaction("⏩")
-        print("Reacting with card")
-        await message.add_reaction(cardDictionaries.cardEmoji["back"])
-        self.messageID = message.id  
-        reactionMessageIDs[self.messageID] = self
-
-    async def handEmbed(self):
-        selectedCard = self.player.hand[self.player.selectedIndex]
-        embed = discord.Embed(title = f"<@{self.userID}>'s hand", description = "Your Hand", color = selectedCard.colorCode())
-        embed.set_image(url=selectedCard.image)
-        cardListSelected = [card.emoji for card in self.player.hand]
-        cardListSelected[self.player.selectedIndex] = "[" + cardListSelected[self.player.selectedIndex]
-        cardListSelected[self.player.selectedIndex] = cardListSelected[self.player.selectedIndex] + "]"
-        embed.add_field(name = "Cards:", value = " ".join(cardListSelected))
-        return embed
-
-    async def updateMessage(self, amount, client):
-        self.player.selectedIndex += amount
-        if self.player.selectedIndex >= len(self.player.hand):
-            self.player.selectedIndex -= (len(self.player.hand))
-        if self.player.selectedIndex < 0:
-            self.player.selectedIndex += len(self.player.hand)
-        user = await client.fetch_user(self.userID)
-        message = await user.fetch_message(self.messageID)
-        await message.edit(embed = await self.handEmbed())
-
-    async def attemptPlayCard(self, client):
-        if not self.game.players[self.game.turnIndex].playerID == self.player.playerID:
-            await OtherMessage("It's not your turn.", self.player).sendMessage(client)
-            return
-        elif not self.game.validCard(self.player.hand[self.player.selectedIndex]):
-            await OtherMessage("You can't play that card.", self.player).sendMessage(client)
-            return
-        await self.game.playCard(self.player, client)
-
-    async def drawCard(self, client):
-        await self.player.drawCard(client)
-
-class OtherMessage:
-    def __init__(self, content, player):
-        self.content = content
-        self.player = player
-
-    async def sendMessage(self, client):
-        user = await client.fetch_user(self.player.playerID)  #Get the user the message is being sent to
-        message = await user.send(self.content)
-        await asyncio.sleep(5)
-        await message.delete()
-
-
-class wildMessage:
-    def __init__(self, card, player, game):
-        self.userID = player.playerID
-        self.type = "wild"
-        self.game = game
-        self.card = card
-        self.player = player
-
-    async def sendMessage(self, client):
-        self.player.state = "wild"
-        user = await client.fetch_user(self.userID)
-        message = await user.send(embed = self.wildEmbed())
-        await message.add_reaction("🟥")
-        await message.add_reaction("🟨")
-        await message.add_reaction("🟩")
-        await message.add_reaction("🟦")    
-        self.messageID = message.id  
-        reactionMessageIDs[self.messageID] = self
-
-    def wildEmbed(self):
-        embed = discord.Embed(title = f"Choose a color", description = self.card.face, color = self.card.colorCode())
-        embed.set_thumbnail(url=self.card.image)
-        return embed
-
-    async def deleteMessage(self, client):
-        user = await client.fetch_user(self.userID)
-        message = await user.fetch_message(self.messageID)
-        await message.delete()
-
-    async def pickColor(self, color, client):
-        card = Card(color = color, face = self.card.face, isColorChoice = False, returnable = False)
-        print(vars(card))
-        await self.game.playCard(self.player, client, source = "wild", card = card)
-        await self.deleteMessage(client)
-        self.player.state = "card"
-
 class Stack:
     def __init__(self, game):
         self.game = game
@@ -338,60 +227,6 @@ class Stack:
             self.game.players[self.game.currentTurnIndex].drawCard(client)
             i -= 1
 
-class stackMessage:
-    def __init__(self, player, game):
-        self.userID = player.playerID
-        self.type = "stack"
-        self.player = player
-        self.game = game
-        self.stackHand = [card for card in player.hand if (card.face == "plus2" and card.color == game.currentCard.color) or card.face == "plus4"]
-        self.index = 0
-
-    async def sendMessage(self, client):
-        user = await client.fetch_user(self.userID)
-        message = await user.send(embed = await self.stackEmbed())
-        await message.add_reaction(cardDictionaries.cardEmoji("back"))
-        await message.add_reaction("◀️")
-        await message.add_reaction("⏺️")
-        await message.add_reaction("▶️")
-        self.messageID = message.id  
-        reactionMessageIDs[self.messageID] = self
-
-    async def stackEmbed(self):
-        selectedCard = self.stackHand[self.index]
-        embed = discord.Embed(title = f"<@{self.userID}>'s stackable cards", description = "Choose a card to stack (or draw cards instead)", color = selectedCard.colorCode())
-        embed.set_image(url=selectedCard.image)
-        cardListSelected = [card.emoji for card in self.stackHand]
-        cardListSelected[self.index] = "[" + cardListSelected[self.index]
-        cardListSelected[self.index] = cardListSelected[self.index] + "]"
-        embed.add_field(name = "Cards:", value = " ".join(cardListSelected))
-        return embed
-
-    async def updateMessage(self, amount, client):
-        self.stackHand = [card for card in self.player.hand if (card.face == "plus2" and card.color == self.game.currentCard.color) or card.face == "plus4"]
-        self.index += amount
-        if self.index >= len(self.stackHand):
-            self.index -= (len(self.stackHand))
-        if self.index < 0:
-            self.index += len(self.stackHand)
-        user = await client.fetch_user(self.userID)
-        message = await user.fetch_message(self.messageID)
-        await message.edit(embed = await self.stackEmbed())
-
-    async def playStackCard(self, client):
-        if not self.game.players[self.game.turnIndex].playerID == self.player.playerID:
-            await OtherMessage("It's not your turn.", self.player).sendMessage(client)
-            return
-        elif not self.game.validCard(self.stackHand[self.index]):
-            await OtherMessage("You can't play that card.", self.player).sendMessage(client)
-            return
-        await self.game.playCard(self.player, client)
-        await self.deleteMessage()
-
-    async def deleteMessage(self, client):
-        user = await client.fetch_user(self.userID)
-        message = await user.fetch_message(self.messageID)
-        await message.delete()
 
 
 class Deck:
@@ -418,21 +253,6 @@ class Deck:
         if not card.returnable == False:
             self.cards.append(card)
 
-class Card:
-    def __init__(self, color, face, isColorChoice = False, returnable = True):
-        self.isColorChoice = isColorChoice
-        self.color = color
-        self.returnable = returnable
-        self.face = face
-        self.image = cardDictionaries.cardImages[str(face) + "_" + color]
-        self.emoji = cardDictionaries.cardEmoji[str(face) + "_" + color]
-
-    def colorCode(self):
-        if self.color == "blue": return 29372               
-        elif self.color == "green": return 5876292
-        elif self.color == "yellow": return 16768534
-        elif self.color == "red": return 15539236
-        else: return 4802889
 
 
 def getRules(channelID):
@@ -451,20 +271,3 @@ def getRules(channelID):
         json.dump(rules, open("storage/channelRulesets.json", "w"))
         return rules[str(channelID)]
 
-def channelInGame(channelID):
-    print(channelID, openGames)
-    if channelID in openGames.keys(): return True
-    else: return False
-    
-
-def channelHasLobby(channelID):
-    if channelID in openLobbies.keys(): return True
-    else: return False
-
-def playerInGame(userID):
-    if userID in playersInGame.keys(): return True
-    else: return False
-
-def playerInLobby(userID):
-    if userID in playersInLobby.keys(): return True
-    else: return False
