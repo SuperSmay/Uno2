@@ -1,7 +1,6 @@
 import discord
 import asyncio
-from storage.globalVariables import reactionMessageIDs
-
+import storage.globalVariables as globalVariables
 class HelpMessage:  #Class for help command
     
     def __init__(self, ctx, argCommand): 
@@ -52,7 +51,7 @@ class HelpMessage:  #Class for help command
         else:
             self.sentMessage = await ctx.send(embed=embedToSend)
             self.sentMessageID = self.sentMessage.id
-            reactionMessageIDs[self.sentMessage.id] = self
+            globalVariables.reactionMessageIDs[self.sentMessage.id] = self
             await self.sentMessage.add_reaction("◀️")
             await self.sentMessage.add_reaction("▶️")
             client.loop.create_task(self.delete(client))   
@@ -64,4 +63,4 @@ class HelpMessage:  #Class for help command
         await asyncio.sleep(300)
         self.sentMessage = await self.getSentMessage(client)
         await self.sentMessage.edit(embed=await self.currentEmbed(), content="This message is now inactive")
-        del(reactionMessageIDs[self.sentMessage.id])
+        del(globalVariables.reactionMessageIDs[self.sentMessage.id])
