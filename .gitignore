@@ -1,6 +1,6 @@
-/__pycache__
+__pycache__
 client/__pycache__
 storage/__pycache__
 storage/TOKEN.token
-/.vscode
-/test scripts
+.vscode
+test scripts
