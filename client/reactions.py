@@ -1,4 +1,4 @@
-from globalVariables import reactionMessageIDs
+from storage.globalVariables import reactionMessageIDs
 
 async def help(emoji, message, user, client):
     helpMessageObject = reactionMessageIDs[message.id]

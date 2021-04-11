@@ -1,24 +1,26 @@
 # client.py
 
 import asyncio
-import discord
-import discord.ext
-import client.commands as commands
-import client.reactions as reactions
-from storage.globalVariables import reactionMessageIDs, openLobbies
-from client.prefix import getPrefix
-import client.backgroundTasks as backgroundTasks
-from discord_slash import SlashCommand
-from discord_slash.utils import manage_commands
 import logging
 
+import discord
+import discord.ext
+from discord_slash import SlashCommand
+from discord_slash.utils import manage_commands
+
+import client.backgroundTasks as backgroundTasks
+import client.commands as commands
+import client.reactions as reactions
+from storage.globalVariables import openLobbies, reactionMessageIDs
+
+TOKEN = open("storage\TOKEN.token", "r").readline()
 
 
 logging.basicConfig(level=logging.INFO)
 
-TOKEN = "NzM2NDE4MDkwNjI3MjM1OTUx.Xxugyg.9SN5blnqxFDBnre2lqgjZUFDrGk"
 
-client = discord.ext.commands.Bot(command_prefix = getPrefix)
+
+client = discord.ext.commands.Bot(command_prefix = None)
 
 client.remove_command('help')  #Remove the deafult help command
 

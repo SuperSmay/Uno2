@@ -1,6 +1,6 @@
 import discord
 import asyncio
-from globalVariables import reactionMessageIDs
+from storage.globalVariables import reactionMessageIDs
 
 class HelpMessage:  #Class for help command
     
