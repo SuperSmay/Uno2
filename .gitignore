@@ -3,3 +3,4 @@ client/__pycache__
 storage/__pycache__
 test scripts/__pycache__
 storage/TOKEN.token
+/.vscode
