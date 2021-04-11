@@ -9,30 +9,15 @@ class HelpMessage:  #Class for help command
         self.channelID = ctx.channel.id
         self.userID = ctx.author.id
         self.helpPages = ["main", "join", "leave", "start", "rules", "ping"]  #List of help pages
-        self.type = "help"  #Type for reference dictionary
-        if argCommand not in self.helpPages:
-            self.index = 0
-        else:
-           self.index = self.helpPages.index(argCommand)
+        self.type = "help"  #Type for reaction reference dictionary
+        self.index = self.helpPages.index(argCommand)
 
     async def updateMessage(self, client):
-        #print(await self.currentEmbed())
-        self.sentMessage = await self.getSentMessage(client)
-        await self.sentMessage.edit(embed=await self.currentEmbed())
+        self.sentMessage = await self.getSentMessage(client)  #Gets the message itself
+        await self.sentMessage.edit(embed=await self.currentEmbed())  #Updates the message with a newly generated embed
 
-    async def currentEmbed(self):
-        #print(self.helpPages[self.index])
-        if self.helpPages[self.index] == "main":  #The following sections are all just embed layouts for the help pages
-            helpEmbed=discord.Embed(title="**Uno2 Help**", description="Uno2 is an Uno game bot for Discord", color=0xe32c22)
-            helpEmbed.add_field(name="**Commands**", value=f"(Tip - You can use /help `command` to get help for a specific command or use the arrows at the bottom of this message)", inline=False)
-            helpEmbed.add_field(name=f"/help", value="Open the help menu", inline=True)
-            helpEmbed.add_field(name=f"/join", value="Joins the lobby in the current channel", inline=True)
-            helpEmbed.add_field(name=f"/leave", value="Leaves the current game/lobby (can be used anywhere!)", inline=True)
-            helpEmbed.add_field(name=f"/start", value="Starts the game of Uno in the current channel", inline=True)
-            helpEmbed.add_field(name=f"/rules", value="Changes the rules for future games of Uno in the current channel", inline=True)
-            helpEmbed.add_field(name=f"/ping", value="Current ping from the bot to Discord", inline=True)
-            helpEmbed.add_field(name=f"/prefix", value="Change the prefix for the current server", inline=True)
-        elif self.helpPages[self.index] == "join":
+    async def currentEmbed(self):  
+        if self.helpPages[self.index] == "join":
             helpEmbed=discord.Embed(title="**Uno2 Help**", description="Join lobby command", color=0xe32c22)
             helpEmbed.add_field(name=f"Usage: /join", value=f"Joins a lobby in the current channel.", inline=True)
         elif self.helpPages[self.index] == "leave":
@@ -47,15 +32,23 @@ class HelpMessage:  #Class for help command
         elif self.helpPages[self.index] == "ping":
             helpEmbed=discord.Embed(title="**Uno2 Help**", description="Ping command", color=0xe32c22)
             helpEmbed.add_field(name=f"Usage: /ping", value=f"Displays the current bot ping to Discord.", inline=True)
-        else:
-            return None
-        helpEmbed.set_footer(text=f"Page {self.index + 1}/{len(self.helpPages)}")  #Gets index and adds one for page number, gets length and subtracts one for total number
+        else:  #Main embed page (Last just in case the index somehow gets messed up, because its the most helpful page)
+            helpEmbed=discord.Embed(title="**Uno2 Help**", description="Uno2 is an Uno game bot for Discord", color=0xe32c22)
+            helpEmbed.add_field(name="**Commands**", value=f"(Tip - You can use /help `command` to get help for a specific command or use the arrows at the bottom of this message)", inline=False)
+            helpEmbed.add_field(name=f"/help", value="Open the help menu", inline=True)
+            helpEmbed.add_field(name=f"/join", value="Joins the lobby in the current channel", inline=True)
+            helpEmbed.add_field(name=f"/leave", value="Leaves the current game/lobby (can be used anywhere!)", inline=True)
+            helpEmbed.add_field(name=f"/start", value="Starts the game of Uno in the current channel", inline=True)
+            helpEmbed.add_field(name=f"/rules", value="Changes the rules for future games of Uno in the current channel", inline=True)
+            helpEmbed.add_field(name=f"/ping", value="Current ping from the bot to Discord", inline=True)
+            helpEmbed.add_field(name=f"/prefix", value="Change the prefix for the current server", inline=True)
+        helpEmbed.set_footer(text=f"Page {self.index + 1}/{len(self.helpPages)}")  #Gets index and adds one for page number; gets length and for total number
         return helpEmbed
 
     async def sendMessage(self, ctx, client):
-        embedToSend = await self.currentEmbed()
+        embedToSend = await self.currentEmbed()  #Generated embed
         if embedToSend == None:
-            await ctx.send(f"Usage: /help `command` (or leave blank) ")
+            await ctx.send(f"Usage: /help `command` (or leave blank) ")  
         else:
             self.sentMessage = await ctx.send(embed=embedToSend)
             self.sentMessageID = self.sentMessage.id

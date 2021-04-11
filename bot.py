@@ -55,11 +55,11 @@ async def ping(ctx): # Defines a new "context" (ctx) command called "ping."
         option_type = 3,
         required = False,
         choices = [
-            {"name" : "Help for the join command", "value" : "join"}, 
-            {"name" : "Help for the leave command", "value" : "leave"}, 
-            {"name" : "Help for the start command", "value" : "start"}, 
-            {"name" : "Help for the rules command", "value" : "rules"}, 
-            {"name" : "Help for the ping command", "value" : "ping"} 
+            {"name" : "join", "value" : "join"}, 
+            {"name" : "leave", "value" : "leave"}, 
+            {"name" : "start", "value" : "start"}, 
+            {"name" : " rules", "value" : "rules"}, 
+            {"name" : "ping", "value" : "ping"} 
             ]
         )   
     ]
