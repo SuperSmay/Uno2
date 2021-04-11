@@ -46,21 +46,18 @@ class HelpMessage:  #Class for help command
 
     async def sendMessage(self, ctx, client):
         embedToSend = await self.currentEmbed()  #Generated embed
-        if embedToSend == None:
-            await ctx.send(f"Usage: /help `command` (or leave blank) ")  
-        else:
-            self.sentMessage = await ctx.send(embed=embedToSend)
-            self.sentMessageID = self.sentMessage.id
-            globalVariables.reactionMessageIDs[self.sentMessage.id] = self
-            await self.sentMessage.add_reaction("◀️")
-            await self.sentMessage.add_reaction("▶️")
-            client.loop.create_task(self.delete(client))   
+        self.sentMessage = await ctx.send(embed=embedToSend)
+        self.sentMessageID = self.sentMessage.id
+        globalVariables.reactionMessageIDs[self.sentMessage.id] = self  #Adds this object to reactionMessageIDs
+        await self.sentMessage.add_reaction("◀️")  #Add control buttons
+        await self.sentMessage.add_reaction("▶️")
+        client.loop.create_task(self.delete(client))   #Creates a task to delete this message from the reaction message dictionary
 
-    async def getSentMessage(self, client):
+    async def getSentMessage(self, client):  #Get the message object from discord
         return await client.get_channel(self.channelID).fetch_message(self.sentMessageID)  
     
-    async def delete(self, client):
-        await asyncio.sleep(300)
-        self.sentMessage = await self.getSentMessage(client)
-        await self.sentMessage.edit(embed=await self.currentEmbed(), content="This message is now inactive")
-        del(globalVariables.reactionMessageIDs[self.sentMessage.id])
+    async def delete(self, client):  #This is run as a background task once the message is sent 
+        await asyncio.sleep(300)  #Waiting for 300 seconds
+        self.sentMessage = await self.getSentMessage(client)  #Get the message object
+        await self.sentMessage.edit(embed=await self.currentEmbed(), content="This message is now inactive")  #Edit the message
+        del(globalVariables.reactionMessageIDs[self.sentMessage.id])  #Delete the message from the reaction dictionary
