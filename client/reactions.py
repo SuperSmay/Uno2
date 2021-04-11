@@ -35,6 +35,8 @@ async def hand(emoji, message, user, client):
         await handMessageObject.updateMessage(1, client)
     elif emoji.name == "⏩":
         await handMessageObject.updateMessage(2, client)
+    elif str(emoji) == "<:back:736433825097318541>":
+        await handMessageObject.drawCard(client)
 
 async def wild(emoji, message, user, client):
     print("wild played")

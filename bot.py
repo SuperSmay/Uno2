@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 
-client = discord.ext.commands.Bot(command_prefix = None)
+client = discord.ext.commands.Bot(command_prefix = "u!")
 
 client.remove_command('help')  #Remove the deafult help command
 
@@ -31,6 +31,16 @@ slash = SlashCommand(client, sync_commands=True) # Declares slash commands throu
 
 guild_ids = [764385563289452545, 766488291934470184]
 
+
+@client.command()
+async def start(ctx):
+    await commands.start(ctx, client)
+
+
+
+@client.event
+async def on_slash_command_error(ctx, ex):
+    print(f"Exception:\n {ex} \nin channel {ctx.channel.name}")
 
 @slash.slash(name="ping", guild_ids=guild_ids)
 async def ping(ctx): # Defines a new "context" (ctx) command called "ping."
