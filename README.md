@@ -27,4 +27,4 @@ Use the arrows ◀ ▶ to cycle one card at a time through your hand, and use th
 ### Special cards
 Coming soon...
 
-###### Uno2 is written in Python and uses [discord.py](https://discordpy.readthedocs.io/en/stable/) and [discord-py-slash-command](https://pypi.org/project/discord-py-slash-command/) to interact with Discord
+###### Uno2 is written in Python and uses [discord.py](https://discordpy.readthedocs.io/en/stable/) and [discord-py-slash-command](https://pypi.org/project/discord-py-slash-command/) to interact with Discord. Created by Smay#0001
