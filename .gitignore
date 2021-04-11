@@ -1,1 +1,3 @@
-**/__pycache__
+/__pycache__
+client/__pycache__
+storage/__pycache__
