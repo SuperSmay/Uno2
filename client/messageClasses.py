@@ -206,14 +206,26 @@ class HandMessage:
         await self.game.playCard(self.player, client)
 
     async def drawCard(self, client):
+        if not self.game.players[self.game.turnIndex].playerID == self.player.playerID:
+            await GenericMessage("It's not your turn.", self.player).sendMessage(client)
+            return
         rules = getRules(self.game.channelID)
-        if rules["drawToMatch"]:
+        print(rules, self.player.drewCard)
+
+        if self.player.drewCard == True:  #Stop if the player has already drawn a card before they play a card
+            await self.game.playCard(player = self.player, client = client, source = "pass")
+            return
+        if rules["drawToMatch"]:  #If draw to match rule is on
             cardValid = False
-            while not cardValid:
+            while not cardValid:  #While the card is not a valid one, keep drawing
                 card = await self.player.drawCard(client)
                 if self.game.validCard(card): cardValid = True
-        else:
-            await self.player.drawCard(client)
+        else:   
+            await self.player.drawCard(client)          
+        self.player.drewCard = True
+        if rules["forceplay"]: 
+            await self.game.playCard(player = self.player, client = client, source = "pass")
+
 
 class GenericMessage:
     def __init__(self, content, player):

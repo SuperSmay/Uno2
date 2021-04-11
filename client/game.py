@@ -3,7 +3,7 @@ import discord
 import time
 from storage.globalVariables import openGames, openLobbies, playersInGame, playersInLobby, channelInGame, channelHasLobby, playerInGame, playerInLobby, getRules
 import random
-from client.cardClass import Card
+from client.cardClass import Card, FakeCard
 import client.messageClasses as messageClasses
 
 class Game:
@@ -56,8 +56,8 @@ class Game:
                 turnStatus = "**It's your turn!**"
                 if not self.gameRunning: 
                     statusMessage = "**You won the game!**"
-        if not self.gameRunning: description = f"**Players:**\n{await playerListString()}\n{statusMessage}"
-        else: description = f"**Players:**\n{await playerListString()}\n{statusMessage}\n\n{turnStatus}"
+        if not self.gameRunning: description = f"**Players:**\n{await playerListString()}\n\n{statusMessage}"
+        else: description = f"**Players:**\n{await playerListString()}\n\n{statusMessage}\n\n{turnStatus}"
         embed = discord.Embed(title = f"Uno2 game in <#{self.channelID}>", description = description, color = self.currentCard.colorCode)
         embed.set_thumbnail(url = self.currentCard.image)
         return embed
@@ -76,8 +76,13 @@ class Game:
             return False
 
     async def playCard(self, player, client, source = "hand", card = None):  #Assumes that the card is valid
+        user = await client.fetch_user(player.playerID)
         if source == "wild":
             selectedCard = card
+            statusMessage = f"{user.name} is chose a color"
+        if source == "pass":
+            selectedCard = FakeCard(self.currentCard)
+            statusMessage = f"{user.name} drew and passed their turn"
         else:
             selectedCard = player.hand[player.selectedIndex]
             del(player.hand[player.selectedIndex])
@@ -89,17 +94,19 @@ class Game:
             player.wildMessage = messageClasses.WildMessage(card = selectedCard, player = player, game = self)
             await player.wildMessage.sendMessage(client = client)
             count = 0
-            statusMessage = "A color is being chosen"
-        elif selectedCard.face == "skip":
+            statusMessage = f"{user.name} is choosing a color"
+        elif selectedCard.face == "skip" and source != "pass":
             count = 2
-        elif selectedCard.face == "reverse":
+            statusMessage = f"{user.name} skipped the next player"
+        elif selectedCard.face == "reverse" and source != "pass":
             reverse = True
+            statusMessage = f"{user.name} reversed the direction"
         #TODO - If card is a plus card, check stack rule then start stack, or if source is stack then add to the current stack
-        statusMessage = "Card played"  #TEMP
         await self.updateGame(reverse = reverse)
         await self.updateTurn(count = count)
         await self.updateMessages(statusMessage = statusMessage, client = client)
         await player.handMessage.updateMessage(amount = 0, client = client)
+        player.drewCard = False
 
     async def updateGame(self, reverse = False):
         if reverse:
@@ -150,6 +157,7 @@ class Player:
         self.gameMessages = {}
         self.selectedIndex = 0
         self.state = "card"
+        self.drewCard = False
 
     async def start(self, client):
         #Create hand for player
