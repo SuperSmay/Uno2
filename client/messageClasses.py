@@ -2,7 +2,7 @@ import discord
 import asyncio
 import storage.globalVariables as globalVariables
 import storage.cardDictionaries as cardDictionaries
-from storage.globalVariables import openGames, openLobbies, playersInGame, playersInLobby, reactionMessageIDs
+from storage.globalVariables import reactionMessageIDs, getRules
 from client.cardClass import Card
 
 class HelpMessage:  #Class for help command
@@ -206,7 +206,14 @@ class HandMessage:
         await self.game.playCard(self.player, client)
 
     async def drawCard(self, client):
-        await self.player.drawCard(client)
+        rules = getRules(self.game.channelID)
+        if rules["drawToMatch"]:
+            cardValid = False
+            while not cardValid:
+                card = await self.player.drawCard(client)
+                if self.game.validCard(card): cardValid = True
+        else:
+            await self.player.drawCard(client)
 
 class GenericMessage:
     def __init__(self, content, player):

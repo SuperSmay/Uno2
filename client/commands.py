@@ -79,10 +79,11 @@ async def start(ctx, client):  #Starts the game in the current channel
     elif playersInLobby[ctx.author.id] != ctx.channel.id:  #The above if shows that the player is in a lobby, so no check for that is needed
         await ctx.send(f"You are already in a lobby in <#{playersInLobby[ctx.author.id]}>. Type `/leave` to leave that lobby to join a new one.")
         return
-    elif len(openLobbies[ctx.channel.id].players) < 2:  #The above ifs prove that there is a lobby in this channel with only one player, the command user, so no checks are needed
+    elif len(openLobbies[ctx.channel.id].players) < 1:  #The above ifs prove that there is a lobby in this channel with only one player, the command user, so no checks are needed
         await ctx.send(f"There are not enough players in this lobby. Get at least one more to join with `/join`.")
         return
-    game = Game(openLobbies[ctx.channel.id])
-    openGames[ctx.channel.id] = game
-    await game.startGame(client)
-    del(openLobbies[ctx.channel.id])
+    else:
+        game = Game(openLobbies[ctx.channel.id])
+        openGames[ctx.channel.id] = game
+        await game.startGame(client)
+        del(openLobbies[ctx.channel.id])

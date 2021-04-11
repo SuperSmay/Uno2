@@ -1,10 +1,8 @@
 import asyncio
 import discord
 import time
-from storage.globalVariables import openGames, openLobbies, playersInGame, playersInLobby, channelInGame, channelHasLobby, playerInGame, playerInLobby
+from storage.globalVariables import openGames, openLobbies, playersInGame, playersInLobby, channelInGame, channelHasLobby, playerInGame, playerInLobby, getRules
 import random
-import json
-import storage.cardDictionaries as cardDictionaries
 from client.cardClass import Card
 import client.messageClasses as messageClasses
 
@@ -60,7 +58,7 @@ class Game:
                     statusMessage = "**You won the game!**"
         if not self.gameRunning: description = f"**Players:**\n{await playerListString()}\n{statusMessage}"
         else: description = f"**Players:**\n{await playerListString()}\n{statusMessage}\n\n{turnStatus}"
-        embed = discord.Embed(title = f"Uno2 game in <#{self.channelID}>", description = description, color = self.currentCard.colorCode())
+        embed = discord.Embed(title = f"Uno2 game in <#{self.channelID}>", description = description, color = self.currentCard.colorCode)
         embed.set_thumbnail(url = self.currentCard.image)
         return embed
 
@@ -162,7 +160,7 @@ class Player:
         user = await client.fetch_user(self.playerID)  #Get the user from discord
         gameMessage = await user.send(embed = await self.game.gameStateEmbed(isDM = True, player = self, statusMessage = "Game started", client = client))  #Send the user the game message
         self.gameMessageID = gameMessage.id  #Set the players game message ID
-        self.handMessage = messageClasses.handMessage(self, self.game)
+        self.handMessage = messageClasses.HandMessage(self, self.game)
         await self.handMessage.sendMessage(client)
 
     async def drawCard(self, client):
@@ -171,7 +169,8 @@ class Player:
         #Add to hand
         self.hand.append(card)
         #Edit message
-        await self.handMessage.updateMessage(0, client)       
+        await self.handMessage.updateMessage(0, client)
+        return card
 class Stack:
     def __init__(self, game):
         self.game = game
@@ -219,19 +218,3 @@ class Deck:
     def returnCard(self, card):
         if not card.returnable == False:
             self.cards.append(card)
-
-def getRules(channelID):
-    rules = json.load(open("storage/channelRulesets.json", "r"))
-    if str(channelID) in rules.keys():
-        return rules[str(channelID)]
-    else:
-        ruleset = {
-            "startingCards" : 7,
-            "jumpIns" : True,
-            "stacking" : True,
-            "forceplay" : False,
-            "drawToMatch" : True
-        }
-        rules[channelID] = ruleset
-        json.dump(rules, open("storage/channelRulesets.json", "w"))
-        return rules[str(channelID)]
