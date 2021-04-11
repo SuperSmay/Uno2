@@ -19,7 +19,7 @@ class Game:
         self.gameRunning = True
         self.reverse = False
         for playerID in gameLobby.players:
-            self.players.append(Player(playerID))
+            self.players.append(Player(playerID, self))
             del(playersInLobby[playerID])
             playersInGame[playerID] = self.channelID
         openGames[self.channelID] = self
@@ -30,15 +30,21 @@ class Game:
 
     async def startGame(self, client):
 
+        print("Starting game...")
+
         self.currentCard = self.deck.drawCard()
 
         while self.currentCard.isColorChoice:
             self.deck.returnCard(self.currentCard)
             self.currentCard = self.deck.drawCard()
 
+        print("First card found, starting players")
+
         for player in self.players:  #For each player in the list of players
-            await player.start(client, self)  #Start that player
+            await player.start(client)  #Start that player
+        print("Getting channel")
         channel = await client.fetch_channel(self.channelID)  #Get channel
+        print("Sending message")
         gameMessage = await channel.send(embed = await self.gameStateEmbed(isDM = False, player = None, statusMessage = "Game started", client = client), content = "Game started")  #Send game message to channel
         self.gameMessageID = gameMessage.id  #Sets game messageID
         
@@ -171,27 +177,36 @@ class GameLobby:
             del(openLobbies[self.channelID])
 
 class Player:
-    def __init__(self, playerID):
+    def __init__(self, playerID, game):
         self.playerID = playerID
         self.hand = []
+        self.game = game
         self.gameMessages = {}
         self.selectedIndex = 0
         self.state = "card"
 
 
-    async def start(self, client, game):
+    async def start(self, client):
         #Create hand for player
         i = 0
-        while i < getRules(game.channelID)["startingCards"]:
-            self.hand.append(game.deck.drawCard())
+        while i < getRules(self.game.channelID)["startingCards"]:
+            self.hand.append(self.game.deck.drawCard())
             i += 1
         
 
         user = await client.fetch_user(self.playerID)  #Get the user from discord
-        gameMessage = await user.send(embed = await game.gameStateEmbed(isDM = True, player = self, statusMessage = "Game started", client = client))  #Send the user the game message
+        gameMessage = await user.send(embed = await self.game.gameStateEmbed(isDM = True, player = self, statusMessage = "Game started", client = client))  #Send the user the game message
         self.gameMessageID = gameMessage.id  #Set the players game message ID
-        self.handMessage = handMessage(self, game)
-       
+        self.handMessage = handMessage(self, self.game)
+        await self.handMessage.sendMessage(client)
+
+    async def drawCard(self, client):
+        #Pick card from deck
+        card = self.game.deck.drawCard()
+        #Add to hand
+        self.hand.append(card)
+        #Edit message
+        await self.handMessage.updateMessage(0, client)       
        
         
     
@@ -213,6 +228,8 @@ class handMessage:
         await message.add_reaction("⏺️")
         await message.add_reaction("▶️")
         await message.add_reaction("⏩")
+        print("Reacting with card")
+        await message.add_reaction(cardDictionaries.cardEmoji["back"])
         self.messageID = message.id  
         reactionMessageIDs[self.messageID] = self
 
@@ -244,6 +261,9 @@ class handMessage:
             await OtherMessage("You can't play that card.", self.player).sendMessage(client)
             return
         await self.game.playCard(self.player, client)
+
+    async def drawCard(self, client):
+        await self.player.drawCard(client)
 
 class OtherMessage:
     def __init__(self, content, player):
@@ -312,10 +332,10 @@ class Stack:
         elif card.face == "plus4" and card.color == "black": self.amount += 4
         self.recentCard == card
 
-    def endStack(self):
+    def endStack(self, client):
         i = self.amount
         while i > 0:
-            self.game.players[self.game.currentTurnIndex].drawCard()
+            self.game.players[self.game.currentTurnIndex].drawCard(client)
             i -= 1
 
 class stackMessage:
@@ -416,7 +436,7 @@ class Card:
 
 
 def getRules(channelID):
-    rules = json.load(open("channelRulesets.json", "r"))
+    rules = json.load(open("storage/channelRulesets.json", "r"))
     if str(channelID) in rules.keys():
         return rules[str(channelID)]
     else:
@@ -428,12 +448,14 @@ def getRules(channelID):
             "drawToMatch" : True
         }
         rules[channelID] = ruleset
-        json.dump(rules, open("channelRulesets.json", "w"))
+        json.dump(rules, open("storage/channelRulesets.json", "w"))
         return rules[str(channelID)]
 
 def channelInGame(channelID):
+    print(channelID, openGames)
     if channelID in openGames.keys(): return True
     else: return False
+    
 
 def channelHasLobby(channelID):
     if channelID in openLobbies.keys(): return True
