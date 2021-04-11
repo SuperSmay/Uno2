@@ -101,6 +101,7 @@ class Game:
         elif selectedCard.face == "reverse" and source != "pass":
             reverse = True
             statusMessage = f"{user.name} reversed the direction"
+        
         #TODO - If card is a plus card, check stack rule then start stack, or if source is stack then add to the current stack
         await self.updateGame(reverse = reverse)
         await self.updateTurn(count = count)

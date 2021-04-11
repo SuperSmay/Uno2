@@ -226,7 +226,6 @@ class HandMessage:
         if rules["forceplay"]: 
             await self.game.playCard(player = self.player, client = client, source = "pass")
 
-
 class GenericMessage:
     def __init__(self, content, player):
         self.content = content
