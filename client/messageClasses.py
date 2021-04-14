@@ -153,7 +153,7 @@ class WildMessage:
     async def pickColor(self, color, client):
         card = Card(color = color, face = self.card.face, isColorChoice = False, returnable = False)
         print(vars(card))
-        await self.game.playCard(self.player, client, source = "wild", card = card)
+        await self.game.playCard(self.player, client, source = "wild", card = card)  #TODO - Change to not call play card please god
         await self.deleteMessage(client)
         self.player.state = "card"
 
@@ -196,14 +196,25 @@ class HandMessage:
         message = await user.fetch_message(self.messageID)
         await message.edit(embed = await self.handEmbed())
 
-    async def attemptPlayCard(self, client):
+    async def playCardButtonPressed(self, client):
+        card = self.player.hand[self.player.selectedIndex]
         if not self.game.players[self.game.turnIndex].playerID == self.player.playerID:
             await GenericMessage("It's not your turn.", self.player).sendMessage(client)
             return
-        elif not self.game.validCard(self.player.hand[self.player.selectedIndex]):
+        elif not self.game.validCard(card):
             await GenericMessage("You can't play that card.", self.player).sendMessage(client)
             return
-        await self.game.playCard(self.player, client)
+        if card.face == "skip":
+            return
+        if card.face == "reverse":
+            return
+        if card.face == "plus2":
+            return
+        if card.face == "plus4":
+            return
+        if card.face == "wild":
+            return
+        await self.game.playCard(self.player, client, card)
 
     async def drawCard(self, client):
         if not self.game.players[self.game.turnIndex].playerID == self.player.playerID:

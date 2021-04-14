@@ -30,7 +30,7 @@ async def hand(emoji, message, user, client):
     elif emoji.name == "◀️":
         await handMessageObject.updateMessage(-1, client)
     elif emoji.name == "⏺️":
-        await handMessageObject.attemptPlayCard(client)
+        await handMessageObject.playCardButtonPressed(client)
     elif emoji.name == "▶️":
         await handMessageObject.updateMessage(1, client)
     elif emoji.name == "⏩":
