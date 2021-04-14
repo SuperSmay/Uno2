@@ -75,46 +75,52 @@ class Game:
         else:
             return False
 
-    async def playCard(self, player, client, source = "hand", card = None):  #Assumes that the card is valid
+    async def playCard(self, player, client, card):  #Assumes that the card is valid
         user = await client.fetch_user(player.playerID)
-        if source == "wild":
-            selectedCard = card
-            statusMessage = f"{user.name} is chose a color"
-        if source == "pass":
-            selectedCard = FakeCard(self.currentCard)
-            statusMessage = f"{user.name} drew and passed their turn"
-        else:
-            selectedCard = player.hand[player.selectedIndex]
-            del(player.hand[player.selectedIndex])
-            self.deck.returnCard(self.currentCard)  #Returns the top card to the deck
-        self.currentCard = selectedCard
-        reverse = False
-        count = 1
-        if selectedCard.isColorChoice:  #If the card is a color choice card (wild card), then send the wild message
-            player.wildMessage = messageClasses.WildMessage(card = selectedCard, player = player, game = self)
-            await player.wildMessage.sendMessage(client = client)
-            count = 0
-            statusMessage = f"{user.name} is choosing a color"
-        elif selectedCard.face == "skip" and source != "pass":
-            count = 2
-            statusMessage = f"{user.name} skipped the next player"
-        elif selectedCard.face == "reverse" and source != "pass":
-            reverse = True
-            statusMessage = f"{user.name} reversed the direction"
-        
-        #TODO - If card is a plus card, check stack rule then start stack, or if source is stack then add to the current stack
-        await self.updateGame(reverse = reverse)
-        await self.updateTurn(count = count)
-        await self.updateMessages(statusMessage = statusMessage, client = client)
+        del(player.hand[player.selectedIndex])
+        self.deck.returnCard(self.currentCard)  #Returns the top card to the deck
+        self.currentCard = card 
         await player.handMessage.updateMessage(amount = 0, client = client)
         player.drewCard = False
+        await self.updateMessages(statusMessage = statusMessage, client = client)
 
-    async def updateGame(self, reverse = False):
-        if reverse:
-            self.reverse = (not self.reverse)
+    async def playWild(self, player, client, card):
+        user = await client.fetch_user(player.playerID)
+        statusMessage = f"{user.name} is chose a color"
+        self.deck.returnCard(self.currentCard)  #Returns the top card to the deck
+        self.currentCard = card
+        player.wildMessage = messageClasses.WildMessage(card = card, player = player, game = self)
+        await player.wildMessage.sendMessage(client = client)
+        await self.updateMessages(statusMessage = statusMessage, client = client)
+
+    async def playPlus4(self, player, client, card):
+        user = await client.fetch_user(player.playerID)
+        self.deck.returnCard(self.currentCard)  #Returns the top card to the deck
+        self.currentCard = card
+        player.wildMessage = messageClasses.WildMessage(card = card, player = player, game = self)
+        await player.wildMessage.sendMessage(client = client)
+        statusMessage = f"{user.name} is chose a color"
+        #TODO - If card is a plus card, check stack rule then start stack, or if source is stack then add to the current stack
+        await self.updateMessages(statusMessage = statusMessage, client = client)
+
+    async def passTurn(self, player, client, card):
+        user = await client.fetch_user(player.playerID)
+        selectedCard = FakeCard(self.currentCard)
+        statusMessage = f"{user.name} drew and passed their turn"
+        await self.updateMessages(statusMessage = statusMessage, client = client)
+
+    async def skipTurn(self, player, client, card = None):
+        self.incrementTurn()
+        user = await client.fetch_user(player.playerID)
+        selectedCard = FakeCard(self.currentCard)
+        statusMessage = f"{user.name} was skipped"
+        await self.updateMessages(statusMessage = statusMessage, client = client)
+
+    async def updateReverse(self):
+        self.reverse = (not self.reverse)
         
-    async def updateTurn(self, count):
-        self.turnIndex += count
+    async def incrementTurn(self):
+        self.turnIndex += 1
         if self.turnIndex >= len(self.players):
             self.turnIndex -= (len(self.players))
         if self.turnIndex < 0:
