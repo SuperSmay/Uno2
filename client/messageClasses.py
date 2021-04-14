@@ -198,6 +198,7 @@ class HandMessage:
 
     async def playCardButtonPressed(self, client):
         card = self.player.hand[self.player.selectedIndex]
+        print(card)
         if not self.game.players[self.game.turnIndex].playerID == self.player.playerID:
             await GenericMessage("It's not your turn.", self.player).sendMessage(client)
             return
@@ -205,23 +206,26 @@ class HandMessage:
             await GenericMessage("You can't play that card.", self.player).sendMessage(client)
             return
         if card.face == "skip":
+            await self.game.playCard(self.player, client, card)
+            statusMessage = await self.game.skipTurn(client)
+        elif card.face == "reverse":
+            await self.game.playCard(self.player, client, card)
+            statusMessage = self.game.updateReverse()
+        elif card.face == "plus2":
             return
-        if card.face == "reverse":
+        elif card.face == "plus4":
             return
-        if card.face == "plus2":
+        elif card.face == "wild":
             return
-        if card.face == "plus4":
-            return
-        if card.face == "wild":
-            return
-        await self.game.playCard(self.player, client, card)
+        else: 
+            statusMessage = await self.game.playCard(self.player, client, card)
+        await self.game.updateGameMessages(statusMessage, client)
 
     async def drawCard(self, client):
         if not self.game.players[self.game.turnIndex].playerID == self.player.playerID:
             await GenericMessage("It's not your turn.", self.player).sendMessage(client)
             return
         rules = getRules(self.game.channelID)
-        print(rules, self.player.drewCard)
 
         if self.player.drewCard == True:  #Stop if the player has already drawn a card before they play a card
             await self.game.playCard(player = self.player, client = client, source = "pass")

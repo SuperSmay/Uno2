@@ -84,7 +84,7 @@ class Game:
         player.drewCard = False
         statusMessage = f"{user.name} played a card"
         self.incrementTurn()
-        await self.updateGameMessages(statusMessage = statusMessage, client = client)
+        return statusMessage
 
     async def startWild(self, player, client, card):
         user = await client.fetch_user(player.playerID)
@@ -93,7 +93,7 @@ class Game:
         self.currentCard = card
         player.wildMessage = messageClasses.WildMessage(card = card, player = player, game = self)
         await player.wildMessage.sendMessage(client = client)
-        await self.updateGameMessages(statusMessage = statusMessage, client = client)
+        return statusMessage
 
     
     async def endWild(self, player, client, card):
@@ -107,23 +107,22 @@ class Game:
         await player.wildMessage.sendMessage(client = client)
         statusMessage = f"{user.name} is chose a color"
         #TODO - If card is a plus card, check stack rule then start stack, or if source is stack then add to the current stack
-        await self.updateGameMessages(statusMessage = statusMessage, client = client)
+        return statusMessage
 
     async def passTurn(self, player, client, card):
         user = await client.fetch_user(player.playerID)
-        selectedCard = FakeCard(self.currentCard)
         statusMessage = f"{user.name} drew and passed their turn"
-        await self.updateGameMessages(statusMessage = statusMessage, client = client)
+        return statusMessage
 
-    async def skipTurn(self, player, client, card = None):
+    async def skipTurn(self, client):
+        user = await client.fetch_user(self.players[self.turnIndex].playerID)
         self.incrementTurn()
-        user = await client.fetch_user(player.playerID)
-        selectedCard = FakeCard(self.currentCard)
         statusMessage = f"{user.name} was skipped"
-        await self.updateGameMessages(statusMessage = statusMessage, client = client)
+        return statusMessage
 
     def updateReverse(self):
         self.reverse = (not self.reverse)
+        return "The direction was reversed"
         
     def incrementTurn(self):
         self.turnIndex += 1

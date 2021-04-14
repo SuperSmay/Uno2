@@ -20,6 +20,9 @@ class Card:
     ##def __eq__(self, card):
         return (self.face + self.color) == (card.face + card.color)
 
+    def __str__(self):
+        return f"{self.color} {self.face}"
+
 class FakeCard:
     def __init__(self, card):
         self.isColorChoice = card.isColorChoice
