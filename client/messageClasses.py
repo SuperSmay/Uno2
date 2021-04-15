@@ -117,7 +117,7 @@ class StackMessage:
             return
         if card.face == "plus2":
             await self.game.playCard(self.player, client, card)
-            statusMessage = await self.game.playPlus2(client)
+            statusMessage = await self.game.playPlus2(client, card)
         elif card.face == "plus4":
             statusMessage = await self.game.startPlus4(self.player, client, card)
         await self.game.updateGameMessages(statusMessage, client)
@@ -260,7 +260,7 @@ class HandMessage:
             statusMessage = self.game.updateReverse()
         elif card.face == "plus2":
             await self.game.playCard(self.player, client, card)
-            statusMessage = await self.game.playPlus2(client)
+            statusMessage = await self.game.playPlus2(client, card)
         elif card.face == "plus4":
             statusMessage = await self.game.startPlus4(self.player, client, card)
         elif card.face == "wild":

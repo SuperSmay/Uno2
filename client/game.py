@@ -103,7 +103,7 @@ class Game:
         self.incrementTurn()
         return statusMessage
 
-    async def playPlus2(self, client):
+    async def playPlus2(self, client, card):
         rules = getRules(self.channelID)
         if not rules["stacking"]:
             currentPlayer = self.players[self.turnIndex]
@@ -116,7 +116,23 @@ class Game:
             statusMessage = f"{currentUser.name} drew 2 cards"
         else:
             #Do stack stuff
-            pass
+            if self.stackActive:
+                self.stack.addStack(card)
+            else:
+                self.stack = Stack(self)
+                self.stack.startStack(card)
+            currentPlayer = self.players[self.turnIndex]
+            currentUser = await client.fetch_user(currentPlayer.playerID)
+            print("Can stack? " + str(self.stack.canStack(currentPlayer)))
+            if self.stack.canStack(currentPlayer):
+                currentPlayer.stackMessage = messageClasses.StackMessage(currentPlayer, self)
+                await currentPlayer.stackMessage.sendMessage(client)
+                statusMessage = f"{currentUser.name} started a stack!"
+            else:
+                await self.stack.endStack(client)
+                statusMessage = f"{currentUser.name} drew {self.stack.amount} cards"
+
+        
         return statusMessage
 
     ### Wild and plus 4
@@ -175,7 +191,7 @@ class Game:
             #Do stack stuff
             currentPlayer = self.players[self.turnIndex]
             currentUser = await client.fetch_user(currentPlayer.playerID)
-            print("Can stack?" + self.stack.canStack(currentPlayer))
+            print("Can stack? " + str(self.stack.canStack(currentPlayer)))
             if self.stack.canStack(currentPlayer):
                 currentPlayer.stackMessage = messageClasses.StackMessage(currentPlayer, self)
                 await currentPlayer.stackMessage.sendMessage(client)
@@ -255,7 +271,7 @@ class Player:
     async def drawCard(self, client):
         #Pick card from deck
         #card = self.game.deck.drawCard()
-        card = Card("black", "plus4", True)
+        card = Card("blue", "plus2", True)
         #Add to hand
         self.hand.append(card)
         #Edit message
@@ -287,6 +303,7 @@ class Stack:
             await self.game.players[self.game.turnIndex].drawCard(client)
             i -= 1
         self.game.incrementTurn()
+        self.game.stackActive = False
 class Deck:
     def __init__(self):
         colors = ["red", "yellow", "green", "blue"]
