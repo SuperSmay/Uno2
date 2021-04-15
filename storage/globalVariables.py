@@ -21,7 +21,6 @@ playersInLobby = {
 }
 
 def channelInGame(channelID):
-    print(channelID, openGames)
     if channelID in openGames.keys(): return True
     else: return False
     
@@ -49,6 +48,6 @@ def getRules(channelID):
             "forceplay" : False,
             "drawToMatch" : True
         }
-        rules[channelID] = ruleset
+        rules[str(channelID)] = ruleset
         json.dump(rules, open("storage/channelRulesets.json", "w"))
         return rules[str(channelID)]

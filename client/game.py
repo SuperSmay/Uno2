@@ -89,7 +89,7 @@ class Game:
         self.incrementTurn()
         return statusMessage
 
-    async def passTurn(self, player, client, card):
+    async def passTurn(self, player, client):
         user = await client.fetch_user(player.playerID)
         statusMessage = f"{user.name} drew and passed their turn"
         self.incrementTurn()
@@ -105,24 +105,40 @@ class Game:
 
     async def startWild(self, player, client, card):
         user = await client.fetch_user(player.playerID)
-        statusMessage = f"{user.name} is chose a color"
+        player.hand.remove(card)
         self.deck.returnCard(self.currentCard)  #Returns the top card to the deck
         self.currentCard = card
-        player.wildMessage = messageClasses.WildMessage(card = card, player = player, game = self)
+        player.wildMessage = messageClasses.WildMessage(player = player, game = self)
+        await player.handMessage.updateMessage(amount = 0, client = client)
         await player.wildMessage.sendMessage(client = client)
+        statusMessage = f"{user.name} is chose a color"
         return statusMessage
 
     async def endWild(self, player, client, card):
-        pass
-
-    async def playPlus4(self, player, client, card):
         user = await client.fetch_user(player.playerID)
+        self.currentCard = card 
+        statusMessage = f"{user.name} chose {card.color}"
+        self.incrementTurn()
+        return statusMessage
+
+    async def startPlus4(self, player, client, card):
+        user = await client.fetch_user(player.playerID)
+        player.hand.remove(card)
         self.deck.returnCard(self.currentCard)  #Returns the top card to the deck
         self.currentCard = card
-        player.wildMessage = messageClasses.WildMessage(card = card, player = player, game = self)
+        player.wildMessage = messageClasses.WildMessage(player = player, game = self)
+        await player.handMessage.updateMessage(amount = 0, client = client)
         await player.wildMessage.sendMessage(client = client)
-        statusMessage = f"{user.name} is chose a color"
+        statusMessage = f"{user.name} is chosing a color"
         #TODO - If card is a plus card, check stack rule then start stack, or if source is stack then add to the current stack
+        return statusMessage
+
+    async def endPlus4(self, player, client, card):
+        user = await client.fetch_user(player.playerID)
+        self.currentCard = card 
+        await player.handMessage.updateMessage(amount = 0, client = client)
+        statusMessage = f"{user.name} chose {card.color}"
+        self.incrementTurn()
         return statusMessage
 
     ###
@@ -155,6 +171,7 @@ class Game:
             del openGames[self.channelID]
             channel = await client.fetch_channel(self.channelID)
             await channel.send("Game closed due to too many players leaving")
+
 class GameLobby:
     def __init__(self, ctx):
         self.channelID = ctx.channel.id
@@ -194,6 +211,7 @@ class Player:
     async def drawCard(self, client):
         #Pick card from deck
         card = self.game.deck.drawCard()
+        #card = Card("black", "wild", True)
         #Add to hand
         self.hand.append(card)
         #Edit message
