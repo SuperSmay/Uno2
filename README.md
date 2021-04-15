@@ -1,6 +1,6 @@
 # Uno2
 ![alt text](https://cdn.discordapp.com/attachments/742986384113008712/830589793037451294/UNO_Logo.png "Uno!")
-## Uno2 is an in development Discord bot that hosts games of Uno. 
+## Uno2 is an in development Discord bot that hosts games of Uno. (It will be offline almost all of the time until it's done)
 ---
 ### Current features:
   * Creating and starting games

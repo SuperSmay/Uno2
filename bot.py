@@ -47,7 +47,6 @@ async def ping(ctx): # Defines a new "context" (ctx) command called "ping."
     await commands.ping(ctx, client.latency)
 
 @slash.slash(name="help", 
-    guild_ids=guild_ids, 
     description="Displays an interactive help message.",
     options=[manage_commands.create_option(
         name = "Command",   

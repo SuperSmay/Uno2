@@ -30,7 +30,7 @@ async def hand(emoji, message, user, client):
     elif emoji.name == "◀️":
         await handMessageObject.updateMessage(-1, client)
     elif emoji.name == "⏺️":
-        await handMessageObject.attemptPlayCard(client)
+        await handMessageObject.playCardButtonPressed(client)
     elif emoji.name == "▶️":
         await handMessageObject.updateMessage(1, client)
     elif emoji.name == "⏩":
@@ -39,7 +39,6 @@ async def hand(emoji, message, user, client):
         await handMessageObject.drawCard(client)
 
 async def wild(emoji, message, user, client):
-    print("wild played")
     wildMessageObject = reactionMessageIDs[message.id]
     if user.id != wildMessageObject.userID:
         return
@@ -53,6 +52,5 @@ async def wild(emoji, message, user, client):
         await wildMessageObject.pickColor("green", client)
     elif emoji.name == "🟦":
         await wildMessageObject.pickColor("blue", client)
-    print("Wild sent")
 
 

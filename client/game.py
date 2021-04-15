@@ -14,6 +14,7 @@ class Game:
         self.players = []
         self.turnIndex = 0
         self.gameRunning = True
+        self.playerStartedCount = 0
         self.reverse = False
         for playerID in gameLobby.players:
             self.players.append(Player(playerID, self))
@@ -28,8 +29,10 @@ class Game:
             self.deck.returnCard(self.currentCard)
             self.currentCard = self.deck.drawCard()
         for player in self.players:  #For each player in the list of players
-            await player.start(client)  #Start that player
+            client.loop.create_task(player.start(client))   #Start that player in a background task
         channel = await client.fetch_channel(self.channelID)  #Get channel
+        while self.playerStartedCount < len(self.players):
+            await asyncio.sleep(0.5)
         gameMessage = await channel.send(embed = await self.gameStateEmbed(isDM = False, player = None, statusMessage = "Game started", client = client), content = "Game started")  #Send game message to channel
         self.gameMessageID = gameMessage.id  #Sets game messageID
 
@@ -75,52 +78,83 @@ class Game:
         else:
             return False
 
-    async def playCard(self, player, client, source = "hand", card = None):  #Assumes that the card is valid
+    async def playCard(self, player, client, card):  #Assumes that the card is valid
         user = await client.fetch_user(player.playerID)
-        if source == "wild":
-            selectedCard = card
-            statusMessage = f"{user.name} is chose a color"
-        if source == "pass":
-            selectedCard = FakeCard(self.currentCard)
-            statusMessage = f"{user.name} drew and passed their turn"
-        else:
-            selectedCard = player.hand[player.selectedIndex]
-            del(player.hand[player.selectedIndex])
-            self.deck.returnCard(self.currentCard)  #Returns the top card to the deck
-        self.currentCard = selectedCard
-        reverse = False
-        count = 1
-        if selectedCard.isColorChoice:  #If the card is a color choice card (wild card), then send the wild message
-            player.wildMessage = messageClasses.WildMessage(card = selectedCard, player = player, game = self)
-            await player.wildMessage.sendMessage(client = client)
-            count = 0
-            statusMessage = f"{user.name} is choosing a color"
-        elif selectedCard.face == "skip" and source != "pass":
-            count = 2
-            statusMessage = f"{user.name} skipped the next player"
-        elif selectedCard.face == "reverse" and source != "pass":
-            reverse = True
-            statusMessage = f"{user.name} reversed the direction"
-        
-        #TODO - If card is a plus card, check stack rule then start stack, or if source is stack then add to the current stack
-        await self.updateGame(reverse = reverse)
-        await self.updateTurn(count = count)
-        await self.updateMessages(statusMessage = statusMessage, client = client)
+        player.hand.remove(card)
+        self.deck.returnCard(self.currentCard)  #Returns the top card to the deck
+        self.currentCard = card 
         await player.handMessage.updateMessage(amount = 0, client = client)
         player.drewCard = False
+        statusMessage = f"{user.name} played a card"
+        self.incrementTurn()
+        return statusMessage
 
-    async def updateGame(self, reverse = False):
-        if reverse:
-            self.reverse = (not self.reverse)
+    async def passTurn(self, player, client):
+        user = await client.fetch_user(player.playerID)
+        statusMessage = f"{user.name} drew and passed their turn"
+        self.incrementTurn()
+        return statusMessage
+
+    async def skipTurn(self, client):
+        user = await client.fetch_user(self.players[self.turnIndex].playerID)
+        statusMessage = f"{user.name} was skipped"
+        self.incrementTurn()
+        return statusMessage
+
+    ### Wild and plus 4
+
+    async def startWild(self, player, client, card):
+        user = await client.fetch_user(player.playerID)
+        player.hand.remove(card)
+        self.deck.returnCard(self.currentCard)  #Returns the top card to the deck
+        self.currentCard = card
+        player.wildMessage = messageClasses.WildMessage(player = player, game = self)
+        await player.handMessage.updateMessage(amount = 0, client = client)
+        await player.wildMessage.sendMessage(client = client)
+        statusMessage = f"{user.name} is chose a color"
+        return statusMessage
+
+    async def endWild(self, player, client, card):
+        user = await client.fetch_user(player.playerID)
+        self.currentCard = card 
+        statusMessage = f"{user.name} chose {card.color}"
+        self.incrementTurn()
+        return statusMessage
+
+    async def startPlus4(self, player, client, card):
+        user = await client.fetch_user(player.playerID)
+        player.hand.remove(card)
+        self.deck.returnCard(self.currentCard)  #Returns the top card to the deck
+        self.currentCard = card
+        player.wildMessage = messageClasses.WildMessage(player = player, game = self)
+        await player.handMessage.updateMessage(amount = 0, client = client)
+        await player.wildMessage.sendMessage(client = client)
+        statusMessage = f"{user.name} is chosing a color"
+        #TODO - If card is a plus card, check stack rule then start stack, or if source is stack then add to the current stack
+        return statusMessage
+
+    async def endPlus4(self, player, client, card):
+        user = await client.fetch_user(player.playerID)
+        self.currentCard = card 
+        await player.handMessage.updateMessage(amount = 0, client = client)
+        statusMessage = f"{user.name} chose {card.color}"
+        self.incrementTurn()
+        return statusMessage
+
+    ###
+
+    def updateReverse(self):
+        self.reverse = (not self.reverse)
+        return "The direction was reversed"
         
-    async def updateTurn(self, count):
-        self.turnIndex += count
+    def incrementTurn(self):
+        self.turnIndex += 1
         if self.turnIndex >= len(self.players):
             self.turnIndex -= (len(self.players))
         if self.turnIndex < 0:
             self.turnIndex += len(self.players)
 
-    async def updateMessages(self, statusMessage, client):
+    async def updateGameMessages(self, statusMessage, client):
         channel = await client.fetch_channel(self.channelID)  #Get channel
         gameMessage = await channel.fetch_message(self.gameMessageID)  #Get game message
         await gameMessage.edit(embed = await self.gameStateEmbed(isDM = False, player = None, statusMessage = statusMessage, client = client))  #Edit game message with new embed
@@ -133,10 +167,11 @@ class Game:
         index = [player.playerID for player in self.players].index(userID)
         del(self.players[index])
         del(playersInGame[userID])
-        if len(self.players) == 0:
+        if len(self.players) <= 1:
             del openGames[self.channelID]
             channel = await client.fetch_channel(self.channelID)
-            await channel.send("Game closed due to all players leaving")
+            await channel.send("Game closed due to too many players leaving")
+
 class GameLobby:
     def __init__(self, ctx):
         self.channelID = ctx.channel.id
@@ -171,15 +206,18 @@ class Player:
         self.gameMessageID = gameMessage.id  #Set the players game message ID
         self.handMessage = messageClasses.HandMessage(self, self.game)
         await self.handMessage.sendMessage(client)
+        self.game.playerStartedCount += 1
 
     async def drawCard(self, client):
         #Pick card from deck
         card = self.game.deck.drawCard()
+        #card = Card("black", "wild", True)
         #Add to hand
         self.hand.append(card)
         #Edit message
         await self.handMessage.updateMessage(0, client)
         return card
+
 class Stack:
     def __init__(self, game):
         self.game = game

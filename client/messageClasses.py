@@ -122,11 +122,10 @@ class StackMessage:
         await message.delete()
 
 class WildMessage:
-    def __init__(self, card, player, game):
+    def __init__(self, player, game):
         self.userID = player.playerID
         self.type = "wild"  #Type for reaction message dictionary
         self.game = game
-        self.card = card
         self.player = player
 
     async def sendMessage(self, client):
@@ -141,8 +140,8 @@ class WildMessage:
         reactionMessageIDs[self.messageID] = self
 
     def wildEmbed(self):
-        embed = discord.Embed(title = f"Choose a color", description = self.card.face, color = self.card.colorCode)  
-        embed.set_thumbnail(url=self.card.image)
+        embed = discord.Embed(title = f"Choose a color", description = "Wild", color = 4802889)  
+        embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/742986384113008712/742986442975871017/Background_2.png")
         return embed
 
     async def deleteMessage(self, client):
@@ -151,11 +150,48 @@ class WildMessage:
         await message.delete()
 
     async def pickColor(self, color, client):
-        card = Card(color = color, face = self.card.face, isColorChoice = False, returnable = False)
+        card = Card(color = color, face = "wild", isColorChoice = False, returnable = False)
         print(vars(card))
-        await self.game.playCard(self.player, client, source = "wild", card = card)
-        await self.deleteMessage(client)
         self.player.state = "card"
+        statusMessage = await self.game.endWild(self.player, client, card = card)  #TODO - Change to not call play card please god
+        await self.game.updateGameMessages(statusMessage, client)
+        await self.deleteMessage(client)
+        
+class Plus4Message:
+    def __init__(self, player, game):
+        self.userID = player.playerID
+        self.type = "wild"  #Type for reaction message dictionary
+        self.game = game
+        self.player = player
+
+    async def sendMessage(self, client):
+        self.player.state = "wild"  #Sets the player state to wild
+        user = await client.fetch_user(self.userID)  #Gets user
+        message = await user.send(embed = self.wildEmbed())  #Sends the embed to the user
+        await message.add_reaction("🟥")  #Add color reactions
+        await message.add_reaction("🟨")
+        await message.add_reaction("🟩")
+        await message.add_reaction("🟦")    
+        self.messageID = message.id
+        reactionMessageIDs[self.messageID] = self
+
+    def plus4Embed(self):
+        embed = discord.Embed(title = f"Choose a color", description = "Plus 4", color = 4802889)  
+        embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/742986384113008712/742986443441307728/Background_3.png")
+        return embed
+
+    async def deleteMessage(self, client):
+        user = await client.fetch_user(self.userID)
+        message = await user.fetch_message(self.messageID)
+        await message.delete()
+
+    async def pickColor(self, color, client):
+        card = Card(color = color, face = "plus4", isColorChoice = False, returnable = False)
+        print(vars(card))
+        self.player.state = "card"
+        statusMessage = await self.game.endPlus4(self.player, client, card = card)  #TODO - Change to not call play card please god
+        await self.game.updateGameMessages(statusMessage, client)
+        await self.deleteMessage(client)
 
 class HandMessage:
     def __init__(self, player, game):
@@ -196,25 +232,40 @@ class HandMessage:
         message = await user.fetch_message(self.messageID)
         await message.edit(embed = await self.handEmbed())
 
-    async def attemptPlayCard(self, client):
+    async def playCardButtonPressed(self, client):
+        card = self.player.hand[self.player.selectedIndex]
+        print(card)
         if not self.game.players[self.game.turnIndex].playerID == self.player.playerID:
             await GenericMessage("It's not your turn.", self.player).sendMessage(client)
             return
-        elif not self.game.validCard(self.player.hand[self.player.selectedIndex]):
+        elif not self.game.validCard(card):
             await GenericMessage("You can't play that card.", self.player).sendMessage(client)
             return
-        await self.game.playCard(self.player, client)
+        if card.face == "skip":
+            await self.game.playCard(self.player, client, card)
+            statusMessage = await self.game.skipTurn(client)
+        elif card.face == "reverse":
+            await self.game.playCard(self.player, client, card)
+            statusMessage = self.game.updateReverse()
+        elif card.face == "plus2":
+            return
+        elif card.face == "plus4":
+            statusMessage = await self.game.startPlus4(self.player, client, card)
+        elif card.face == "wild":
+            statusMessage = await self.game.startWild(self.player, client, card)
+        else: 
+            statusMessage = await self.game.playCard(self.player, client, card)
+        await self.game.updateGameMessages(statusMessage, client)
 
     async def drawCard(self, client):
         if not self.game.players[self.game.turnIndex].playerID == self.player.playerID:
             await GenericMessage("It's not your turn.", self.player).sendMessage(client)
             return
         rules = getRules(self.game.channelID)
-        print(rules, self.player.drewCard)
 
         if self.player.drewCard == True:  #Stop if the player has already drawn a card before they play a card
-            await self.game.playCard(player = self.player, client = client, source = "pass")
-            return
+            statusMessage = await self.game.passTurn(player = self.player, client = client)
+            await self.game.updateGameMessages(statusMessage, client)
         if rules["drawToMatch"]:  #If draw to match rule is on
             cardValid = False
             while not cardValid:  #While the card is not a valid one, keep drawing
