@@ -150,12 +150,12 @@ class WildMessage:
         await message.delete()
 
     async def pickColor(self, color, client):
+        await self.deleteMessage(client)
         card = Card(color = color, face = "wild", isColorChoice = False, returnable = False)
         print(vars(card))
         self.player.state = "card"
         statusMessage = await self.game.endWild(self.player, client, card = card)  #TODO - Change to not call play card please god
         await self.game.updateGameMessages(statusMessage, client)
-        await self.deleteMessage(client)
         
 class Plus4Message:
     def __init__(self, player, game):
@@ -167,7 +167,7 @@ class Plus4Message:
     async def sendMessage(self, client):
         self.player.state = "wild"  #Sets the player state to wild
         user = await client.fetch_user(self.userID)  #Gets user
-        message = await user.send(embed = self.wildEmbed())  #Sends the embed to the user
+        message = await user.send(embed = self.plus4Embed())  #Sends the embed to the user
         await message.add_reaction("🟥")  #Add color reactions
         await message.add_reaction("🟨")
         await message.add_reaction("🟩")
@@ -186,12 +186,12 @@ class Plus4Message:
         await message.delete()
 
     async def pickColor(self, color, client):
+        await self.deleteMessage(client)
         card = Card(color = color, face = "plus4", isColorChoice = False, returnable = False)
         print(vars(card))
         self.player.state = "card"
         statusMessage = await self.game.endPlus4(self.player, client, card = card)  #TODO - Change to not call play card please god
         await self.game.updateGameMessages(statusMessage, client)
-        await self.deleteMessage(client)
 
 class HandMessage:
     def __init__(self, player, game):
@@ -248,7 +248,8 @@ class HandMessage:
             await self.game.playCard(self.player, client, card)
             statusMessage = self.game.updateReverse()
         elif card.face == "plus2":
-            return
+            await self.game.playCard(self.player, client, card)
+            statusMessage = await self.game.playPlus2(client)
         elif card.face == "plus4":
             statusMessage = await self.game.startPlus4(self.player, client, card)
         elif card.face == "wild":

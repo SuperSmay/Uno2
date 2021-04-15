@@ -1,5 +1,4 @@
 
-draw cards
 stacks
 7-0
 jump in/69
@@ -16,8 +15,4 @@ BUGS:
 Game embed shows channelID instead of name
 Hand embed shows user tag id instead of name
 /start reply should be deleted once the game starts
-wild card messages missing capitalization
 Other players card count shown as zero in dm message because the game message is sent before other players get their cards
-
-
-Fixed...? 

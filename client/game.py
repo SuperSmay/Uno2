@@ -101,6 +101,22 @@ class Game:
         self.incrementTurn()
         return statusMessage
 
+    async def playPlus2(self, client):
+        rules = getRules(self.channelID)
+        if not rules["stacking"]:
+            currentPlayer = self.players[self.turnIndex]
+            currentUser = await client.fetch_user(currentPlayer.playerID)
+            count = 0
+            while count < 2:
+                await currentPlayer.drawCard(client)
+                count += 1
+            self.incrementTurn()
+            statusMessage = f"{currentUser.name} drew 2 cards"
+        else:
+            #Do stack stuff
+            pass
+        return statusMessage
+
     ### Wild and plus 4
 
     async def startWild(self, player, client, card):
@@ -126,7 +142,7 @@ class Game:
         player.hand.remove(card)
         self.deck.returnCard(self.currentCard)  #Returns the top card to the deck
         self.currentCard = card
-        player.wildMessage = messageClasses.WildMessage(player = player, game = self)
+        player.wildMessage = messageClasses.Plus4Message(player = player, game = self)
         await player.handMessage.updateMessage(amount = 0, client = client)
         await player.wildMessage.sendMessage(client = client)
         statusMessage = f"{user.name} is chosing a color"
@@ -134,11 +150,22 @@ class Game:
         return statusMessage
 
     async def endPlus4(self, player, client, card):
+        rules = getRules(self.channelID)
         user = await client.fetch_user(player.playerID)
         self.currentCard = card 
-        await player.handMessage.updateMessage(amount = 0, client = client)
-        statusMessage = f"{user.name} chose {card.color}"
         self.incrementTurn()
+        if not rules["stacking"]:
+            currentPlayer = self.players[self.turnIndex]
+            currentUser = await client.fetch_user(currentPlayer.playerID)
+            count = 0
+            while count < 4:
+                await currentPlayer.drawCard(client)
+                count += 1
+            self.incrementTurn()
+            statusMessage = f"{user.name} chose {card.color}, and {currentUser.name} drew 4 cards"
+        else:
+            #Do stack stuff
+            pass
         return statusMessage
 
     ###
@@ -210,8 +237,8 @@ class Player:
 
     async def drawCard(self, client):
         #Pick card from deck
-        card = self.game.deck.drawCard()
-        #card = Card("black", "wild", True)
+        #card = self.game.deck.drawCard()
+        card = Card("black", "plus4", True)
         #Add to hand
         self.hand.append(card)
         #Edit message
