@@ -42,7 +42,7 @@ async def start(ctx):
 async def on_slash_command_error(ctx, ex):
     print(f"Exception:\n {ex} \nin channel {ctx.channel.name}")
 
-@slash.slash(name="ping", guild_ids=guild_ids)
+@slash.slash(name="ping")
 async def ping(ctx): # Defines a new "context" (ctx) command called "ping."
     await commands.ping(ctx, client.latency)
 
@@ -68,36 +68,31 @@ async def help(ctx, argCommand="main"): # Defines a new "context" (ctx) command 
     await commands.help(ctx, argCommand, client)
 
 @slash.slash(name="foo", 
-    guild_ids=guild_ids, 
     description="A development command."
 )
 
 async def foo(ctx): # Defines a new "context" (ctx) command called "foo."
     await commands.fooTest(ctx)
 
-@slash.slash(name="join", 
-    guild_ids=guild_ids, 
+@slash.slash(name="join",  
     description="Join a game lobby",
 )
 async def join(ctx): # Defines a new "context" (ctx) command called "ping."
     await commands.join(ctx)
 
 @slash.slash(name="leave", 
-    guild_ids=guild_ids, 
     description="Leave a game lobby",
 )
 async def leave(ctx): # Defines a new "context" (ctx) command called "ping."
     await commands.leave(ctx, client)
 
 @slash.slash(name="lobby", 
-    guild_ids=guild_ids, 
     description="View a game lobby",
 )
 async def lobby(ctx): # Defines a new "context" (ctx) command called "ping."
     await commands.lobby(ctx, client)
 
 @slash.slash(name="start", 
-    guild_ids=guild_ids, 
     description="Start a game",
 )
 async def start(ctx): # Defines a new "context" (ctx) command called "ping."
@@ -161,6 +156,8 @@ async def reactionUpdate(emoji, message, user):  #Function called on every react
         await reactions.hand(emoji, message, user, client)
     elif reactionMessageIDs[message.id].type == "wild":
         await reactions.wild(emoji, message, user, client)
+    elif reactionMessageIDs[message.id].type == "stack":
+        await reactions.stack(emoji, message, user, client)
 
 @client.event
 #Bot has joined, says which servers/guilds

@@ -53,4 +53,17 @@ async def wild(emoji, message, user, client):
     elif emoji.name == "🟦":
         await wildMessageObject.pickColor("blue", client)
 
-
+async def stack(emoji, message, user, client):
+    stackMessageObject = reactionMessageIDs[message.id]
+    if user.id != stackMessageObject.userID:
+        return
+    if not stackMessageObject.player.state == "stack":
+        return
+    if emoji.name == "◀️":
+        await stackMessageObject.updateMessage(-1, client)
+    elif emoji.name == "⏺️":
+        await stackMessageObject.playStackCard(client)
+    elif emoji.name == "▶️":
+        await stackMessageObject.updateMessage(1, client)
+    elif str(emoji) == "<:back:736433825097318541>":
+        await stackMessageObject.endStack(client)

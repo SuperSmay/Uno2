@@ -78,10 +78,12 @@ class StackMessage:
     async def sendMessage(self, client):
         user = await client.fetch_user(self.userID)
         message = await user.send(embed = await self.stackEmbed())
-        await message.add_reaction(cardDictionaries.cardEmoji("back"))
         await message.add_reaction("◀️")
         await message.add_reaction("⏺️")
         await message.add_reaction("▶️")
+        await message.add_reaction(cardDictionaries.cardEmoji["back"])
+        globalVariables.reactionMessageIDs[message.id] = self
+        self.player.state = "stack"
         self.messageID = message.id  
         reactionMessageIDs[self.messageID] = self
 
@@ -96,7 +98,6 @@ class StackMessage:
         return embed
 
     async def updateMessage(self, amount, client):
-        self.stackHand = [card for card in self.player.hand if (card.face == "plus2" and card.color == self.game.currentCard.color) or card.face == "plus4"]
         self.index += amount
         if self.index >= len(self.stackHand):
             self.index -= (len(self.stackHand))
@@ -107,19 +108,29 @@ class StackMessage:
         await message.edit(embed = await self.stackEmbed())
 
     async def playStackCard(self, client):
+        card = self.stackHand[self.index]
         if not self.game.players[self.game.turnIndex].playerID == self.player.playerID:
             await GenericMessage("It's not your turn.", self.player).sendMessage(client)
             return
-        elif not self.game.validCard(self.stackHand[self.index]):
+        elif not self.game.validCard(card):
             await GenericMessage("You can't play that card.", self.player).sendMessage(client)
             return
-        await self.game.playCard(self.player, client)
-        await self.deleteMessage()
+        if card.face == "plus2":
+            await self.game.playCard(self.player, client, card)
+            statusMessage = await self.game.playPlus2(client)
+        elif card.face == "plus4":
+            statusMessage = await self.game.startPlus4(self.player, client, card)
+        await self.game.updateGameMessages(statusMessage, client)
+        await self.deleteMessage(client)
+
+    async def endStack(self, client):
+        self.game.stack.endStack(client)
 
     async def deleteMessage(self, client):
         user = await client.fetch_user(self.userID)
         message = await user.fetch_message(self.messageID)
         await message.delete()
+        self.player.state = "card"
 
 class WildMessage:
     def __init__(self, player, game):
@@ -267,6 +278,7 @@ class HandMessage:
         if self.player.drewCard == True:  #Stop if the player has already drawn a card before they play a card
             statusMessage = await self.game.passTurn(player = self.player, client = client)
             await self.game.updateGameMessages(statusMessage, client)
+            return
         if rules["drawToMatch"]:  #If draw to match rule is on
             cardValid = False
             while not cardValid:  #While the card is not a valid one, keep drawing
@@ -275,8 +287,8 @@ class HandMessage:
         else:   
             await self.player.drawCard(client)          
         self.player.drewCard = True
-        if rules["forceplay"]: 
-            await self.game.playCard(player = self.player, client = client, source = "pass")
+        if rules["forceplay"]:  #TODO - Fix this, it won't work at all
+            await self.game.playCard(player = self.player, client = client)
 
 class GenericMessage:
     def __init__(self, content, player):

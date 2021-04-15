@@ -44,7 +44,7 @@ def getRules(channelID):
         ruleset = {
             "startingCards" : 7,
             "jumpIns" : True,
-            "stacking" : False,
+            "stacking" : True,
             "forceplay" : False,
             "drawToMatch" : True
         }

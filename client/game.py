@@ -16,6 +16,7 @@ class Game:
         self.gameRunning = True
         self.playerStartedCount = 0
         self.reverse = False
+        self.stackActive = False
         for playerID in gameLobby.players:
             self.players.append(Player(playerID, self))
             del(playersInLobby[playerID])
@@ -93,6 +94,7 @@ class Game:
         user = await client.fetch_user(player.playerID)
         statusMessage = f"{user.name} drew and passed their turn"
         self.incrementTurn()
+        player.drewCard = False
         return statusMessage
 
     async def skipTurn(self, client):
@@ -138,6 +140,7 @@ class Game:
         return statusMessage
 
     async def startPlus4(self, player, client, card):
+        rules = getRules(self.channelID)
         user = await client.fetch_user(player.playerID)
         player.hand.remove(card)
         self.deck.returnCard(self.currentCard)  #Returns the top card to the deck
@@ -147,6 +150,11 @@ class Game:
         await player.wildMessage.sendMessage(client = client)
         statusMessage = f"{user.name} is chosing a color"
         #TODO - If card is a plus card, check stack rule then start stack, or if source is stack then add to the current stack
+        if self.stackActive:
+            self.stack.addStack(card)
+        elif rules["stacking"]:
+            self.stack = Stack(self)
+            self.stack.startStack(card)
         return statusMessage
 
     async def endPlus4(self, player, client, card):
@@ -165,7 +173,16 @@ class Game:
             statusMessage = f"{user.name} chose {card.color}, and {currentUser.name} drew 4 cards"
         else:
             #Do stack stuff
-            pass
+            currentPlayer = self.players[self.turnIndex]
+            currentUser = await client.fetch_user(currentPlayer.playerID)
+            print("Can stack?" + self.stack.canStack(currentPlayer))
+            if self.stack.canStack(currentPlayer):
+                currentPlayer.stackMessage = messageClasses.StackMessage(currentPlayer, self)
+                await currentPlayer.stackMessage.sendMessage(client)
+                statusMessage = f"{currentUser.name} started a stack!"
+            else:
+                await self.stack.endStack(client)
+                statusMessage = f"{currentUser.name} drew {self.stack.amount} cards"
         return statusMessage
 
     ###
@@ -248,7 +265,7 @@ class Player:
 class Stack:
     def __init__(self, game):
         self.game = game
-        game.stack = True
+        game.stackActive = True
 
     def startStack(self, card):
         if card.face == "plus2": self.amount = 2
@@ -256,7 +273,7 @@ class Stack:
         self.recentCard = card
 
     def canStack(self, player):
-        if "plus2" or "plus4" in [card.face for card in player.hand]: return True
+        if len([card for card in player.hand if (card.face == "plus2" and card.color == self.game.currentCard.color) or card.face == "plus4"]) > 0: return True
         else: return False
 
     def addStack(self, card):
@@ -264,11 +281,12 @@ class Stack:
         elif card.face == "plus4" and card.color == "black": self.amount += 4
         self.recentCard == card
 
-    def endStack(self, client):
+    async def endStack(self, client):
         i = self.amount
         while i > 0:
-            self.game.players[self.game.currentTurnIndex].drawCard(client)
+            await self.game.players[self.game.turnIndex].drawCard(client)
             i -= 1
+        self.game.incrementTurn()
 class Deck:
     def __init__(self):
         colors = ["red", "yellow", "green", "blue"]
