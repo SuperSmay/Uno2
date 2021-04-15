@@ -63,6 +63,8 @@ class Game:
         if not self.gameRunning: description = f"**Players:**\n{await playerListString()}\n\n{statusMessage}"
         else: description = f"**Players:**\n{await playerListString()}\n\n{statusMessage}\n\n{turnStatus}"
         embed = discord.Embed(title = f"Uno2 game in <#{self.channelID}>", description = description, color = self.currentCard.colorCode)
+        if self.stackActive:
+            embed.add_field(name = "Current stack count:", value=f"{self.stack.amount} cards")
         embed.set_thumbnail(url = self.currentCard.image)
         return embed
 
@@ -289,7 +291,7 @@ class Stack:
         self.recentCard = card
 
     def canStack(self, player):
-        if len([card for card in player.hand if (card.face == "plus2" and card.color == self.game.currentCard.color) or card.face == "plus4"]) > 0: return True
+        if len([card for card in player.hand if (card.face == "plus2" and card.color == self.game.currentCard.color) or card.face == "plus4" or (card.face == "plus2" and self.game.currentCard.face == "plus2")]) > 0: return True
         else: return False
 
     def addStack(self, card):

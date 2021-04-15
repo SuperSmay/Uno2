@@ -72,7 +72,7 @@ class StackMessage:
         self.type = "stack"
         self.player = player
         self.game = game
-        self.stackHand = [card for card in player.hand if (card.face == "plus2" and card.color == game.currentCard.color) or card.face == "plus4"]
+        self.stackHand = [card for card in player.hand if (card.face == "plus2" and card.color == game.currentCard.color) or card.face == "plus4" or (card.face == "plus2" and game.currentCard.face == "plus2")]
         self.index = 0
 
     async def sendMessage(self, client):
@@ -90,6 +90,7 @@ class StackMessage:
     async def stackEmbed(self):
         selectedCard = self.stackHand[self.index]
         embed = discord.Embed(title = f"<@{self.userID}>'s stackable cards", description = "Choose a card to stack (or draw cards instead)", color = selectedCard.colorCode)
+        embed.add_field(name = "Current card count:", value=f"{self.game.stack.amount} cards")
         embed.set_image(url=selectedCard.image)
         cardListSelected = [card.emoji for card in self.stackHand]
         cardListSelected[self.index] = "[" + cardListSelected[self.index]
@@ -120,11 +121,15 @@ class StackMessage:
             statusMessage = await self.game.playPlus2(client, card)
         elif card.face == "plus4":
             statusMessage = await self.game.startPlus4(self.player, client, card)
-        await self.game.updateGameMessages(statusMessage, client)
         await self.deleteMessage(client)
+        await self.game.updateGameMessages(statusMessage, client)
 
     async def endStack(self, client):
-        self.game.stack.endStack(client)
+        user = await client.fetch_user(self.userID)
+        await self.game.stack.endStack(client)
+        statusMessage = f"{user.name} drew {self.game.stack.amount} cards"
+        await self.deleteMessage(client)
+        await self.game.updateGameMessages(statusMessage, client)
 
     async def deleteMessage(self, client):
         user = await client.fetch_user(self.userID)
