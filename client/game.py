@@ -14,6 +14,7 @@ class Game:
         self.players = []
         self.turnIndex = 0
         self.gameRunning = True
+        self.playerStartedCount = 0
         self.reverse = False
         for playerID in gameLobby.players:
             self.players.append(Player(playerID, self))
@@ -28,8 +29,10 @@ class Game:
             self.deck.returnCard(self.currentCard)
             self.currentCard = self.deck.drawCard()
         for player in self.players:  #For each player in the list of players
-            await player.start(client)  #Start that player
+            client.loop.create_task(player.start(client))   #Start that player in a background task
         channel = await client.fetch_channel(self.channelID)  #Get channel
+        while self.playerStartedCount < len(self.players):
+            await asyncio.sleep(0.5)
         gameMessage = await channel.send(embed = await self.gameStateEmbed(isDM = False, player = None, statusMessage = "Game started", client = client), content = "Game started")  #Send game message to channel
         self.gameMessageID = gameMessage.id  #Sets game messageID
 
@@ -86,6 +89,20 @@ class Game:
         self.incrementTurn()
         return statusMessage
 
+    async def passTurn(self, player, client, card):
+        user = await client.fetch_user(player.playerID)
+        statusMessage = f"{user.name} drew and passed their turn"
+        self.incrementTurn()
+        return statusMessage
+
+    async def skipTurn(self, client):
+        user = await client.fetch_user(self.players[self.turnIndex].playerID)
+        statusMessage = f"{user.name} was skipped"
+        self.incrementTurn()
+        return statusMessage
+
+    ### Wild and plus 4
+
     async def startWild(self, player, client, card):
         user = await client.fetch_user(player.playerID)
         statusMessage = f"{user.name} is chose a color"
@@ -95,7 +112,6 @@ class Game:
         await player.wildMessage.sendMessage(client = client)
         return statusMessage
 
-    
     async def endWild(self, player, client, card):
         pass
 
@@ -109,16 +125,7 @@ class Game:
         #TODO - If card is a plus card, check stack rule then start stack, or if source is stack then add to the current stack
         return statusMessage
 
-    async def passTurn(self, player, client, card):
-        user = await client.fetch_user(player.playerID)
-        statusMessage = f"{user.name} drew and passed their turn"
-        return statusMessage
-
-    async def skipTurn(self, client):
-        user = await client.fetch_user(self.players[self.turnIndex].playerID)
-        self.incrementTurn()
-        statusMessage = f"{user.name} was skipped"
-        return statusMessage
+    ###
 
     def updateReverse(self):
         self.reverse = (not self.reverse)
@@ -144,10 +151,10 @@ class Game:
         index = [player.playerID for player in self.players].index(userID)
         del(self.players[index])
         del(playersInGame[userID])
-        if len(self.players) == 0:
+        if len(self.players) <= 1:
             del openGames[self.channelID]
             channel = await client.fetch_channel(self.channelID)
-            await channel.send("Game closed due to all players leaving")
+            await channel.send("Game closed due to too many players leaving")
 class GameLobby:
     def __init__(self, ctx):
         self.channelID = ctx.channel.id
@@ -182,6 +189,7 @@ class Player:
         self.gameMessageID = gameMessage.id  #Set the players game message ID
         self.handMessage = messageClasses.HandMessage(self, self.game)
         await self.handMessage.sendMessage(client)
+        self.game.playerStartedCount += 1
 
     async def drawCard(self, client):
         #Pick card from deck
