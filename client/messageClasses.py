@@ -74,14 +74,15 @@ class StackMessage:
         self.game = game
         self.stackHand = [card for card in player.hand if (card.face == "plus2" and card.color == game.currentCard.color) or card.face == "plus4" or (card.face == "plus2" and game.currentCard.face == "plus2")]
         self.index = 0
+        self.player.stackMessage = self
 
     async def sendMessage(self, client):
         user = await client.fetch_user(self.userID)
         message = await user.send(embed = await self.stackEmbed())
-        await message.add_reaction("◀️")
-        await message.add_reaction("⏺️")
-        await message.add_reaction("▶️")
-        await message.add_reaction(cardDictionaries.cardEmoji["back"])
+        client.loop.create_task(message.add_reaction("◀️"))
+        client.loop.create_task(message.add_reaction("⏺️"))
+        client.loop.create_task(message.add_reaction("▶️"))
+        client.loop.create_task(message.add_reaction(cardDictionaries.cardEmoji["back"]))
         globalVariables.reactionMessageIDs[message.id] = self
         self.player.state = "stack"
         self.messageID = message.id  
@@ -143,15 +144,16 @@ class WildMessage:
         self.type = "wild"  #Type for reaction message dictionary
         self.game = game
         self.player = player
+        self.player.wildMessage = self
 
     async def sendMessage(self, client):
         self.player.state = "wild"  #Sets the player state to wild
         user = await client.fetch_user(self.userID)  #Gets user
         message = await user.send(embed = self.wildEmbed())  #Sends the embed to the user
-        await message.add_reaction("🟥")  #Add color reactions
-        await message.add_reaction("🟨")
-        await message.add_reaction("🟩")
-        await message.add_reaction("🟦")    
+        client.loop.create_task(message.add_reaction("🟥"))  #Add color reactions
+        client.loop.create_task(message.add_reaction("🟨"))
+        client.loop.create_task(message.add_reaction("🟩"))
+        client.loop.create_task(message.add_reaction("🟦"))
         self.messageID = message.id
         reactionMessageIDs[self.messageID] = self
 
@@ -179,15 +181,16 @@ class Plus4Message:
         self.type = "wild"  #Type for reaction message dictionary
         self.game = game
         self.player = player
+        self.player.wildMessage = self
 
     async def sendMessage(self, client):
         self.player.state = "wild"  #Sets the player state to wild
         user = await client.fetch_user(self.userID)  #Gets user
         message = await user.send(embed = self.plus4Embed())  #Sends the embed to the user
-        await message.add_reaction("🟥")  #Add color reactions
-        await message.add_reaction("🟨")
-        await message.add_reaction("🟩")
-        await message.add_reaction("🟦")    
+        client.loop.create_task(message.add_reaction("🟥"))  #Add color reactions
+        client.loop.create_task(message.add_reaction("🟨"))
+        client.loop.create_task(message.add_reaction("🟩"))
+        client.loop.create_task(message.add_reaction("🟦"))   
         self.messageID = message.id
         reactionMessageIDs[self.messageID] = self
 
@@ -215,17 +218,18 @@ class HandMessage:
         self.type = "hand"
         self.player = player
         self.game = game
+        self.player.handMessage = self
 
     async def sendMessage(self, client):
         user = await client.fetch_user(self.userID)
         message = await user.send(embed = await self.handEmbed())
-        await message.add_reaction("⏪")
-        await message.add_reaction("◀️")
-        await message.add_reaction("⏺️")
-        await message.add_reaction("▶️")
-        await message.add_reaction("⏩")
-        await message.add_reaction(cardDictionaries.cardEmoji["back"])
-        self.messageID = message.id  
+        client.loop.create_task(message.add_reaction("⏪"))
+        client.loop.create_task(message.add_reaction("◀️"))
+        client.loop.create_task(message.add_reaction("⏺️"))
+        client.loop.create_task(message.add_reaction("▶️"))
+        client.loop.create_task(message.add_reaction("⏩"))
+        client.loop.create_task(message.add_reaction(cardDictionaries.cardEmoji["back"]))
+        self.messageID = message.id
         reactionMessageIDs[self.messageID] = self
 
     async def handEmbed(self):
@@ -252,10 +256,10 @@ class HandMessage:
         card = self.player.hand[self.player.selectedIndex]
         print(card)
         if not self.game.players[self.game.turnIndex].playerID == self.player.playerID:
-            await GenericMessage("It's not your turn.", self.player).sendMessage(client)
+            client.loop.create_task(GenericMessage("It's not your turn.", self.player).sendMessage(client))
             return
         elif not self.game.validCard(card):
-            await GenericMessage("You can't play that card.", self.player).sendMessage(client)
+            client.loop.create_task(GenericMessage("You can't play that card.", self.player).sendMessage(client))
             return
         if card.face == "skip":
             await self.game.playCard(self.player, client, card)
@@ -276,7 +280,7 @@ class HandMessage:
 
     async def drawCard(self, client):
         if not self.game.players[self.game.turnIndex].playerID == self.player.playerID:
-            await GenericMessage("It's not your turn.", self.player).sendMessage(client)
+            client.loop.create_task(GenericMessage("It's not your turn.", self.player).sendMessage(client))
             return
         rules = getRules(self.game.channelID)
 
@@ -294,6 +298,11 @@ class HandMessage:
         self.player.drewCard = True
         if rules["forceplay"]:  #TODO - Fix this, it won't work at all
             await self.game.playCard(player = self.player, client = client)
+
+    async def deleteMessage(self, client):
+        user = await client.fetch_user(self.userID)
+        message = await user.fetch_message(self.messageID)
+        await message.delete()
 
 class GenericMessage:
     def __init__(self, content, player):

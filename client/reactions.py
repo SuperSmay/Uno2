@@ -26,15 +26,15 @@ async def hand(emoji, message, user, client):
     if not handMessageObject.player.state == "card":
         return
     if emoji.name == "⏪":
-        await handMessageObject.updateMessage(-2, client)
+        client.loop.create_task(handMessageObject.updateMessage(-2, client))
     elif emoji.name == "◀️":
-        await handMessageObject.updateMessage(-1, client)
+        client.loop.create_task(handMessageObject.updateMessage(-1, client))
     elif emoji.name == "⏺️":
         await handMessageObject.playCardButtonPressed(client)
     elif emoji.name == "▶️":
-        await handMessageObject.updateMessage(1, client)
+        client.loop.create_task(handMessageObject.updateMessage(1, client))
     elif emoji.name == "⏩":
-        await handMessageObject.updateMessage(2, client)
+        client.loop.create_task(handMessageObject.updateMessage(2, client))
     elif str(emoji) == "<:back:736433825097318541>":
         await handMessageObject.drawCard(client)
 
