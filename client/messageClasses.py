@@ -289,15 +289,10 @@ class HandMessage:
             await self.game.updateGameMessages(statusMessage, client)
             return
         if rules["drawToMatch"]:  #If draw to match rule is on
-            cardValid = False
-            while not cardValid:  #While the card is not a valid one, keep drawing
-                card = await self.player.drawCard(client)
-                if self.game.validCard(card): cardValid = True
+            await self.player.drawCard(client, count = 0, drawToMatch = True)
         else:   
-            await self.player.drawCard(client)          
+            await self.player.drawCard(client, count = 1, drawToMatch = False)
         self.player.drewCard = True
-        if rules["forceplay"]:  #TODO - Fix this, it won't work at all
-            await self.game.playCard(player = self.player, client = client)
 
     async def deleteMessage(self, client):
         user = await client.fetch_user(self.userID)
@@ -314,3 +309,106 @@ class GenericMessage:
         message = await user.send(self.content)
         await asyncio.sleep(5)
         await message.delete()
+
+class DrawMessage:
+    def __init__(self, player, game):
+        self.player = player
+        player.drawMessage = self
+        self.game = game
+        self.type = "draw"
+        self.cards = []
+        self.userID = player.playerID
+
+    async def drawCards(self, count, drawToMatch = False):
+        if drawToMatch:
+            cardValid = False
+            while not cardValid:  #While the card is not a valid one, keep drawing
+                card = self.game.deck.drawCard()
+                self.cards.append(card)
+                if self.game.validCard(card): cardValid = True
+        while count > 0:
+            self.cards.append(await self.game.deck.drawCard())
+            count -= 1
+        self.player.hand += self.cards
+        print(self.cards)
+
+    async def sendMessage(self, client, canPlay = True):
+        self.player.state = "draw"
+        self.canPlay = canPlay
+        rules = getRules(self.game.channelID)
+        user = await client.fetch_user(self.userID)
+        message = await user.send(embed = self.cardsEmbed())
+        self.messageID = message.id
+        reactionMessageIDs[self.messageID] = self
+        if rules["drawToMatch"] and canPlay:
+            if not rules["forceplay"]:
+                client.loop.create_task(message.add_reaction("✅"))
+                client.loop.create_task(message.add_reaction("❎"))
+                self.canPlay = True
+            else:
+                self.playCard(client)
+                client.loop.create_task(message.add_reaction("❎"))
+                client.loop.create_task(self.autoDismiss(client))
+                self.canPlay = False
+        else:
+            client.loop.create_task(message.add_reaction("❎"))
+            client.loop.create_task(self.autoDismiss(client))
+            self.canPlay = False
+        await self.player.handMessage.updateMessage(0, client)
+        
+    def cardsEmbed(self):
+        rules = getRules(self.game.channelID)
+        if rules["drawToMatch"]:
+            if rules["forceplay"]:
+                description = f"You were forced to play {self.cards[-1].emoji}"
+            else:
+                description = f"Would you like to play {self.cards[-1].emoji}?"
+            embed = discord.Embed(title = f"You drew {len(self.cards)} cards", description = description, color = 4802889) 
+            embed.add_field(name = "Cards:", value = "".join([card.emoji for card in self.cards]))
+        else:
+            description = self.cards[0].emoji
+            embed = discord.Embed(title = f"You drew a card", description = description, color = 4802889) 
+        return embed
+
+    async def deleteMessage(self, client):
+        user = await client.fetch_user(self.userID)
+        message = await user.fetch_message(self.messageID)
+        await message.delete()
+
+    async def dismiss(self, client, cardPlayed = False):
+        self.player.state = "card"
+        await self.deleteMessage(client)
+        self.player.drewCard = False
+        if not cardPlayed:
+            statusMessage = await self.game.passTurn(self.player, client)
+            await self.game.updateGameMessages(statusMessage, client)
+
+    async def autoDismiss(self, client):
+        await asyncio.sleep(10)
+        try:
+            await self.dismiss(client)
+        except:
+            pass
+
+    async def playCard(self, client):  #Assumes card is valid
+        if not self.canPlay:
+            self.dismiss(client)
+        self.canPlay = False
+        card = self.cards[-1]
+        if card.face == "skip":
+            await self.game.playCard(self.player, client, card)
+            statusMessage = await self.game.skipTurn(client)
+        elif card.face == "reverse":
+            await self.game.playCard(self.player, client, card)
+            statusMessage = self.game.updateReverse()
+        elif card.face == "plus2":
+            await self.game.playCard(self.player, client, card)
+            statusMessage = await self.game.playPlus2(client, card)
+        elif card.face == "plus4":
+            statusMessage = await self.game.startPlus4(self.player, client, card)
+        elif card.face == "wild":
+            statusMessage = await self.game.startWild(self.player, client, card)
+        else: 
+            statusMessage = await self.game.playCard(self.player, client, card)
+        await self.game.updateGameMessages(statusMessage, client)
+        await self.dismiss(client, cardPlayed= True)

@@ -67,3 +67,14 @@ async def stack(emoji, message, user, client):
         await stackMessageObject.updateMessage(1, client)
     elif str(emoji) == "<:back:736433825097318541>":
         await stackMessageObject.endStack(client)
+
+async def draw(emoji, message, user, client):
+    drawMessageObject = reactionMessageIDs[message.id]
+    if user.id != drawMessageObject.userID:
+        return
+    if not drawMessageObject.player.drewCard:
+        return
+    if emoji.name == "✅":
+        await drawMessageObject.playCard(client)
+    elif emoji.name == "❎":
+        await drawMessageObject.dismiss(client)

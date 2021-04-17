@@ -158,6 +158,8 @@ async def reactionUpdate(emoji, message, user):  #Function called on every react
         await reactions.wild(emoji, message, user, client)
     elif reactionMessageIDs[message.id].type == "stack":
         await reactions.stack(emoji, message, user, client)
+    elif reactionMessageIDs[message.id].type == "draw":
+        await reactions.draw(emoji, message, user, client)
 
 @client.event
 #Bot has joined, says which servers/guilds

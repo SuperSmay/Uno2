@@ -111,7 +111,7 @@ class Game:
         self.currentCard = card 
         player.hand.remove(card)
         if len(player.hand) == 0:
-            self.gameWon(player, client)
+            await self.gameWon(player, client)
             return 
         client.loop.create_task(player.handMessage.updateMessage(amount = 0, client = client))
         player.drewCard = False
@@ -137,10 +137,7 @@ class Game:
         if not rules["stacking"]:
             currentPlayer = self.players[self.turnIndex]
             currentUser = await client.fetch_user(currentPlayer.playerID)
-            count = 0
-            while count < 2:
-                await currentPlayer.drawCard(client)
-                count += 1
+            self.player.drawCard(client, count = 2, drawToMatch = False, canPlay = False)
             self.incrementTurn()
             statusMessage = f"{currentUser.name} drew 2 cards"
         else:
@@ -170,7 +167,7 @@ class Game:
         self.deck.returnCard(self.currentCard)  #Returns the top card to the deck
         self.currentCard = card
         if len(player.hand) == 0:
-            self.gameWon(player, client)
+            await self.gameWon(player, client)
             return
         messageClasses.WildMessage(player = player, game = self)
         client.loop.create_task(player.handMessage.updateMessage(amount = 0, client = client))
@@ -192,7 +189,7 @@ class Game:
         self.deck.returnCard(self.currentCard)  #Returns the top card to the deck
         self.currentCard = card
         if len(player.hand) == 0:
-            self.gameWon(player, client)
+            await self.gameWon(player, client)
             return
         messageClasses.Plus4Message(player = player, game = self)
         client.loop.create_task(player.handMessage.updateMessage(amount = 0, client = client))
@@ -214,10 +211,7 @@ class Game:
         if not rules["stacking"]:
             currentPlayer = self.players[self.turnIndex]
             currentUser = await client.fetch_user(currentPlayer.playerID)
-            count = 0
-            while count < 4:
-                await currentPlayer.drawCard(client)
-                count += 1
+            self.player.drawCard(client, count = 4, drawToMatch = False, canPlay = False)
             self.incrementTurn()
             statusMessage = f"{user.name} chose {card.color}, and {currentUser.name} drew 4 cards"
         else:
@@ -308,15 +302,11 @@ class Player:
         await self.handMessage.sendMessage(client)
         self.game.playerStartedCount += 1
 
-    async def drawCard(self, client):
+    async def drawCard(self, client, count = 0, drawToMatch = False, canPlay = True):
         #Pick card from deck
-        card = self.game.deck.drawCard()
-        #card = Card("blue", "plus2", True)
-        #Add to hand
-        self.hand.append(card)
-        #Edit message
-        await self.handMessage.updateMessage(0, client)
-        return card
+        self.drawMessage = messageClasses.DrawMessage(self, self.game)
+        await self.drawMessage.drawCards(count, drawToMatch)
+        await self.drawMessage.sendMessage(client)
 
 class Stack:
     def __init__(self, game):
@@ -338,10 +328,7 @@ class Stack:
         self.recentCard == card
 
     async def endStack(self, client):
-        i = self.amount
-        while i > 0:
-            await self.game.players[self.game.turnIndex].drawCard(client)
-            i -= 1
+        self.game.players[self.game.turnIndex].drawCard(client, count = self.amount, drawToMatch = False, canPlay = False)
         self.game.incrementTurn()
         self.game.stackActive = False
 class Deck:
