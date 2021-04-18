@@ -4,23 +4,21 @@ import asyncio
 import logging
 
 import discord
-import discord.ext
+import discord
 from discord_slash import SlashCommand
 from discord_slash.utils import manage_commands
 
 import client.backgroundTasks as backgroundTasks
 import client.commands as commands
 import client.reactions as reactions
-from storage.globalVariables import openLobbies, reactionMessageIDs
-
-TOKEN = open("storage\TOKEN.token", "r").readline()
-
-
-logging.basicConfig(level=logging.INFO)
-
+from storage.globalVariables import openLobbies, reactionMessageIDs, client
 
 
 client = discord.ext.commands.Bot(command_prefix = "u!")
+
+TOKEN = open("storage\TOKEN.token", "r").readline()
+
+logging.basicConfig(level=logging.INFO)
 
 client.remove_command('help')  #Remove the deafult help command
 

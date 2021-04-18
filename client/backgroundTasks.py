@@ -5,6 +5,9 @@ import storage.globalVariables as globalVariables
 timeInterval = 5  #Time in seconds between each run through of the loop
 
 async def checkChannelAvailability(client):
+    '''
+    Starts the background process to check for deleted or unaccessible channels
+    '''
     print(f"Channel availability background check started. Cycle time is {timeInterval} seconds.")
     while True:  
         for item in globalVariables.openLobbies.keys():  #For each key (channelID) in the open lobbies list

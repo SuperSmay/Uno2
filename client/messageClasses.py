@@ -261,22 +261,7 @@ class HandMessage:
         elif not self.game.validCard(card):
             client.loop.create_task(GenericMessage("You can't play that card.", self.player).sendMessage(client))
             return
-        if card.face == "skip":
-            await self.game.playCard(self.player, client, card)
-            statusMessage = await self.game.skipTurn(client)
-        elif card.face == "reverse":
-            await self.game.playCard(self.player, client, card)
-            statusMessage = self.game.updateReverse()
-        elif card.face == "plus2":
-            await self.game.playCard(self.player, client, card)
-            statusMessage = await self.game.playPlus2(client, card)
-        elif card.face == "plus4":
-            statusMessage = await self.game.startPlus4(self.player, client, card)
-        elif card.face == "wild":
-            statusMessage = await self.game.startWild(self.player, client, card)
-        else: 
-            statusMessage = await self.game.playCard(self.player, client, card)
-        await self.game.updateGameMessages(statusMessage, client)
+        self.game.playCard(client, self.player, card)
 
     async def drawCard(self, client):
         if not self.game.players[self.game.turnIndex].playerID == self.player.playerID:
@@ -344,6 +329,7 @@ class DrawMessage:
             if not rules["forceplay"]:
                 client.loop.create_task(message.add_reaction("✅"))
                 client.loop.create_task(message.add_reaction("❎"))
+                client.loop.create_task(self.autoDismiss(client))
                 self.canPlay = True
             else:
                 self.playCard(client)
@@ -375,13 +361,20 @@ class DrawMessage:
         message = await user.fetch_message(self.messageID)
         await message.delete()
 
-    async def dismiss(self, client, cardPlayed = False):
+    async def dismiss(self, client):
         self.player.state = "card"
         await self.deleteMessage(client)
+        statusMessage = await self.game.passTurn(self.player, client)
+        await self.game.updateGameMessages(statusMessage, client)
         self.player.drewCard = False
-        if not cardPlayed:
-            statusMessage = await self.game.passTurn(self.player, client)
-            await self.game.updateGameMessages(statusMessage, client)
+
+    async def accept(self, client):
+        if not self.canPlay:
+            return
+        self.player.state = "card"
+        await self.deleteMessage(client)
+        await self.playCard(client)
+        self.player.drewCard = False
 
     async def autoDismiss(self, client):
         await asyncio.sleep(10)
@@ -391,24 +384,7 @@ class DrawMessage:
             pass
 
     async def playCard(self, client):  #Assumes card is valid
-        if not self.canPlay:
-            self.dismiss(client)
         self.canPlay = False
         card = self.cards[-1]
-        if card.face == "skip":
-            await self.game.playCard(self.player, client, card)
-            statusMessage = await self.game.skipTurn(client)
-        elif card.face == "reverse":
-            await self.game.playCard(self.player, client, card)
-            statusMessage = self.game.updateReverse()
-        elif card.face == "plus2":
-            await self.game.playCard(self.player, client, card)
-            statusMessage = await self.game.playPlus2(client, card)
-        elif card.face == "plus4":
-            statusMessage = await self.game.startPlus4(self.player, client, card)
-        elif card.face == "wild":
-            statusMessage = await self.game.startWild(self.player, client, card)
-        else: 
-            statusMessage = await self.game.playCard(self.player, client, card)
-        await self.game.updateGameMessages(statusMessage, client)
-        await self.dismiss(client, cardPlayed= True)
+        self.game.playCard(client, self.player, card)
+        await self.dismiss(client)

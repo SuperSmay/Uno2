@@ -75,6 +75,6 @@ async def draw(emoji, message, user, client):
     if not drawMessageObject.player.drewCard:
         return
     if emoji.name == "✅":
-        await drawMessageObject.playCard(client)
+        await drawMessageObject.accept(client)
     elif emoji.name == "❎":
         await drawMessageObject.dismiss(client)

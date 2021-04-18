@@ -1,4 +1,5 @@
 import json
+import discord.ext
 
 reactionMessageIDs = {
     
@@ -51,3 +52,5 @@ def getRules(channelID):
         rules[str(channelID)] = ruleset
         json.dump(rules, open("storage/channelRulesets.json", "w"))
         return rules[str(channelID)]
+
+client = discord.ext.commands.Bot(command_prefix = "u!")

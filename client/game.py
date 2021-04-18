@@ -105,7 +105,7 @@ class Game:
             client.loop.create_task(playerGameMessage.edit(embed = embed))
 
 
-    async def playCard(self, player, client, card):  #Assumes that the card is valid
+    async def playCardGeneric(self, player, client, card):  #Assumes that the card is valid
         user = await client.fetch_user(player.playerID)
         self.deck.returnCard(self.currentCard)  #Returns the top card to the deck
         self.currentCard = card 
@@ -229,6 +229,24 @@ class Game:
         return statusMessage
 
     ###
+
+    async def playCard(self, client, player, card):  #Assumes valid card
+        if card.face == "skip":
+            await self.playCardGeneric(player, client, card)
+            statusMessage = await self.game.skipTurn(client)
+        elif card.face == "reverse":
+            await self.playCardGeneric(player, client, card)
+            statusMessage = self.updateReverse()
+        elif card.face == "plus2":
+            await self.playCardGeneric(player, client, card)
+            statusMessage = await self.playPlus2(client, card)
+        elif card.face == "plus4":
+            statusMessage = await self.startPlus4(player, client, card)
+        elif card.face == "wild":
+            statusMessage = await self.startWild(player, client, card)
+        else: 
+            statusMessage = await self.playCardGeneric(player, client, card)
+        await self.updateGameMessages(statusMessage, client)
 
     def updateReverse(self):
         self.reverse = (not self.reverse)
