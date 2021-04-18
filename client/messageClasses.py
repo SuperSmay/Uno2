@@ -2,7 +2,7 @@ import discord
 import asyncio
 import storage.globalVariables as globalVariables
 import storage.cardDictionaries as cardDictionaries
-from storage.globalVariables import reactionMessageIDs, getRules
+from storage.globalVariables import reactionMessageIDs, getRules, client
 from client.cardClass import Card
 
 class HelpMessage:  #Class for help command
@@ -15,8 +15,8 @@ class HelpMessage:  #Class for help command
         self.type = "help"  #Type for reaction reference dictionary
         self.index = self.helpPages.index(argCommand)
 
-    async def updateMessage(self, client):
-        self.sentMessage = await self.getSentMessage(client)  #Gets the message itself
+    async def updateMessage(self):
+        self.sentMessage = await self.getSentMessage()  #Gets the message itself
         await self.sentMessage.edit(embed=await self.currentEmbed())  #Updates the message with a newly generated embed
 
     async def currentEmbed(self):  
@@ -48,21 +48,21 @@ class HelpMessage:  #Class for help command
         helpEmbed.set_footer(text=f"Page {self.index + 1}/{len(self.helpPages)}")  #Gets index and adds one for page number; gets length and for total number
         return helpEmbed
 
-    async def sendMessage(self, ctx, client):
+    async def sendMessage(self, ctx):
         embedToSend = await self.currentEmbed()  #Generated embed
         self.sentMessage = await ctx.send(embed=embedToSend)
         self.sentMessageID = self.sentMessage.id
         globalVariables.reactionMessageIDs[self.sentMessage.id] = self  #Adds this object to reactionMessageIDs
         await self.sentMessage.add_reaction("◀️")  #Add control buttons
         await self.sentMessage.add_reaction("▶️")
-        client.loop.create_task(self.close(client))   #Creates a task to delete this message from the reaction message dictionary
+        client.loop.create_task(self.close())   #Creates a task to delete this message from the reaction message dictionary
 
-    async def getSentMessage(self, client):  #Get the message object from discord
+    async def getSentMessage(self):  #Get the message object from discord
         return await client.get_channel(self.channelID).fetch_message(self.sentMessageID)  
     
-    async def close(self, client):  #This is run as a background task once the message is sent 
+    async def close(self):  #This is run as a background task once the message is sent 
         await asyncio.sleep(300)  #Waiting for 300 seconds
-        self.sentMessage = await self.getSentMessage(client)  #Get the message object
+        self.sentMessage = await self.getSentMessage()  #Get the message object
         await self.sentMessage.edit(embed=await self.currentEmbed(), content="This message is now inactive")  #Edit the message
         del(globalVariables.reactionMessageIDs[self.sentMessage.id])  #Delete the message from the reaction dictionary
 
@@ -76,7 +76,7 @@ class StackMessage:
         self.index = 0
         self.player.stackMessage = self
 
-    async def sendMessage(self, client):
+    async def sendMessage(self):
         user = await client.fetch_user(self.userID)
         message = await user.send(embed = await self.stackEmbed())
         client.loop.create_task(message.add_reaction("◀️"))
@@ -99,7 +99,7 @@ class StackMessage:
         embed.add_field(name = "Cards:", value = " ".join(cardListSelected))
         return embed
 
-    async def updateMessage(self, amount, client):
+    async def updateMessage(self, amount):
         self.index += amount
         if self.index >= len(self.stackHand):
             self.index -= (len(self.stackHand))
@@ -109,30 +109,30 @@ class StackMessage:
         message = await user.fetch_message(self.messageID)
         await message.edit(embed = await self.stackEmbed())
 
-    async def playStackCard(self, client):
+    async def playStackCard(self):
         card = self.stackHand[self.index]
         if not self.game.players[self.game.turnIndex].playerID == self.player.playerID:
-            await GenericMessage("It's not your turn.", self.player).sendMessage(client)
+            await GenericMessage("It's not your turn.", self.player).sendMessage()
             return
         elif not self.game.validCard(card):
-            await GenericMessage("You can't play that card.", self.player).sendMessage(client)
+            await GenericMessage("You can't play that card.", self.player).sendMessage()
             return
         if card.face == "plus2":
-            await self.game.playCard(self.player, client, card)
-            statusMessage = await self.game.playPlus2(client, card)
+            await self.game.playCard(self.player, card)
+            statusMessage = await self.game.playPlus2(card)
         elif card.face == "plus4":
-            statusMessage = await self.game.startPlus4(self.player, client, card)
-        await self.deleteMessage(client)
-        await self.game.updateGameMessages(statusMessage, client)
+            statusMessage = await self.game.startPlus4(self.player, card)
+        await self.deleteMessage()
+        await self.game.updateGameMessages(statusMessage)
 
-    async def endStack(self, client):
+    async def endStack(self):
         user = await client.fetch_user(self.userID)
-        await self.game.stack.endStack(client)
+        await self.game.stack.endStack()
         statusMessage = f"{user.name} drew {self.game.stack.amount} cards"
-        await self.deleteMessage(client)
-        await self.game.updateGameMessages(statusMessage, client)
+        await self.deleteMessage()
+        await self.game.updateGameMessages(statusMessage)
 
-    async def deleteMessage(self, client):
+    async def deleteMessage(self):
         user = await client.fetch_user(self.userID)
         message = await user.fetch_message(self.messageID)
         await message.delete()
@@ -146,7 +146,7 @@ class WildMessage:
         self.player = player
         self.player.wildMessage = self
 
-    async def sendMessage(self, client):
+    async def sendMessage(self):
         self.player.state = "wild"  #Sets the player state to wild
         user = await client.fetch_user(self.userID)  #Gets user
         message = await user.send(embed = self.wildEmbed())  #Sends the embed to the user
@@ -162,18 +162,18 @@ class WildMessage:
         embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/742986384113008712/742986442975871017/Background_2.png")
         return embed
 
-    async def deleteMessage(self, client):
+    async def deleteMessage(self):
         user = await client.fetch_user(self.userID)
         message = await user.fetch_message(self.messageID)
         await message.delete()
 
-    async def pickColor(self, color, client):
-        await self.deleteMessage(client)
+    async def pickColor(self, color):
+        self.player.state = "card"
+        client.loop.create_task(self.deleteMessage())
         card = Card(color = color, face = "wild", isColorChoice = False, returnable = False)
         print(vars(card))
-        self.player.state = "card"
-        statusMessage = await self.game.endWild(self.player, client, card = card)  #TODO - Change to not call play card please god
-        await self.game.updateGameMessages(statusMessage, client)
+        statusMessage = await self.game.endWild(self.player, card = card)  #TODO - Change to not call play card please god
+        await self.game.updateGameMessages(statusMessage)
         
 class Plus4Message:
     def __init__(self, player, game):
@@ -183,7 +183,7 @@ class Plus4Message:
         self.player = player
         self.player.wildMessage = self
 
-    async def sendMessage(self, client):
+    async def sendMessage(self):
         self.player.state = "wild"  #Sets the player state to wild
         user = await client.fetch_user(self.userID)  #Gets user
         message = await user.send(embed = self.plus4Embed())  #Sends the embed to the user
@@ -199,18 +199,18 @@ class Plus4Message:
         embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/742986384113008712/742986443441307728/Background_3.png")
         return embed
 
-    async def deleteMessage(self, client):
+    async def deleteMessage(self):
         user = await client.fetch_user(self.userID)
         message = await user.fetch_message(self.messageID)
         await message.delete()
 
-    async def pickColor(self, color, client):
-        await self.deleteMessage(client)
+    async def pickColor(self, color):
+        self.player.state = "card"
+        client.loop.create_task(self.deleteMessage())
         card = Card(color = color, face = "plus4", isColorChoice = False, returnable = False)
         print(vars(card))
-        self.player.state = "card"
-        statusMessage = await self.game.endPlus4(self.player, client, card = card)  #TODO - Change to not call play card please god
-        await self.game.updateGameMessages(statusMessage, client)
+        statusMessage = await self.game.endPlus4(self.player, card = card)  #TODO - Change to not call play card please god
+        await self.game.updateGameMessages(statusMessage)
 
 class HandMessage:
     def __init__(self, player, game):
@@ -220,7 +220,7 @@ class HandMessage:
         self.game = game
         self.player.handMessage = self
 
-    async def sendMessage(self, client):
+    async def sendMessage(self):
         user = await client.fetch_user(self.userID)
         message = await user.send(embed = await self.handEmbed())
         client.loop.create_task(message.add_reaction("⏪"))
@@ -242,7 +242,7 @@ class HandMessage:
         embed.add_field(name = "Cards:", value = " ".join(cardListSelected))
         return embed
 
-    async def updateMessage(self, amount, client):
+    async def updateMessage(self, amount):
         self.player.selectedIndex += amount
         if self.player.selectedIndex >= len(self.player.hand):
             self.player.selectedIndex -= (len(self.player.hand))
@@ -252,34 +252,34 @@ class HandMessage:
         message = await user.fetch_message(self.messageID)
         await message.edit(embed = await self.handEmbed())
 
-    async def playCardButtonPressed(self, client):
+    async def playCardButtonPressed(self):
         card = self.player.hand[self.player.selectedIndex]
         print(card)
         if not self.game.players[self.game.turnIndex].playerID == self.player.playerID:
-            client.loop.create_task(GenericMessage("It's not your turn.", self.player).sendMessage(client))
+            client.loop.create_task(GenericMessage("It's not your turn.", self.player).sendMessage())
             return
         elif not self.game.validCard(card):
-            client.loop.create_task(GenericMessage("You can't play that card.", self.player).sendMessage(client))
+            client.loop.create_task(GenericMessage("You can't play that card.", self.player).sendMessage())
             return
-        self.game.playCard(client, self.player, card)
+        await self.game.playCard(self.player, card)
 
-    async def drawCard(self, client):
+    async def drawCard(self):
         if not self.game.players[self.game.turnIndex].playerID == self.player.playerID:
-            client.loop.create_task(GenericMessage("It's not your turn.", self.player).sendMessage(client))
+            client.loop.create_task(GenericMessage("It's not your turn.", self.player).sendMessage())
             return
         rules = getRules(self.game.channelID)
 
         if self.player.drewCard == True:  #Stop if the player has already drawn a card before they play a card
-            statusMessage = await self.game.passTurn(player = self.player, client = client)
-            await self.game.updateGameMessages(statusMessage, client)
+            statusMessage = await self.game.passTurn(player = self.player)
+            await self.game.updateGameMessages(statusMessage)
             return
         if rules["drawToMatch"]:  #If draw to match rule is on
-            await self.player.drawCard(client, count = 0, drawToMatch = True)
+            await self.player.drawCard(count = 0, drawToMatch = True)
         else:   
-            await self.player.drawCard(client, count = 1, drawToMatch = False)
+            await self.player.drawCard(count = 1, drawToMatch = False)
         self.player.drewCard = True
 
-    async def deleteMessage(self, client):
+    async def deleteMessage(self):
         user = await client.fetch_user(self.userID)
         message = await user.fetch_message(self.messageID)
         await message.delete()
@@ -289,7 +289,7 @@ class GenericMessage:
         self.content = content
         self.player = player
 
-    async def sendMessage(self, client):
+    async def sendMessage(self):
         user = await client.fetch_user(self.player.playerID)  #Get the user the message is being sent to
         message = await user.send(self.content)
         await asyncio.sleep(5)
@@ -317,7 +317,7 @@ class DrawMessage:
         self.player.hand += self.cards
         print(self.cards)
 
-    async def sendMessage(self, client, canPlay = True):
+    async def sendMessage(self, canPlay = True):
         self.player.state = "draw"
         self.canPlay = canPlay
         rules = getRules(self.game.channelID)
@@ -329,18 +329,18 @@ class DrawMessage:
             if not rules["forceplay"]:
                 client.loop.create_task(message.add_reaction("✅"))
                 client.loop.create_task(message.add_reaction("❎"))
-                client.loop.create_task(self.autoDismiss(client))
+                client.loop.create_task(self.autoDismiss())
                 self.canPlay = True
             else:
-                self.playCard(client)
+                self.playCard()
                 client.loop.create_task(message.add_reaction("❎"))
-                client.loop.create_task(self.autoDismiss(client))
+                client.loop.create_task(self.autoDismiss())
                 self.canPlay = False
         else:
             client.loop.create_task(message.add_reaction("❎"))
-            client.loop.create_task(self.autoDismiss(client))
+            client.loop.create_task(self.autoDismiss())
             self.canPlay = False
-        await self.player.handMessage.updateMessage(0, client)
+        await self.player.handMessage.updateMessage(0)
         
     def cardsEmbed(self):
         rules = getRules(self.game.channelID)
@@ -356,35 +356,35 @@ class DrawMessage:
             embed = discord.Embed(title = f"You drew a card", description = description, color = 4802889) 
         return embed
 
-    async def deleteMessage(self, client):
+    async def deleteMessage(self):
         user = await client.fetch_user(self.userID)
         message = await user.fetch_message(self.messageID)
         await message.delete()
 
-    async def dismiss(self, client):
+    async def dismiss(self):
         self.player.state = "card"
-        await self.deleteMessage(client)
-        statusMessage = await self.game.passTurn(self.player, client)
-        await self.game.updateGameMessages(statusMessage, client)
+        await self.deleteMessage()
+        statusMessage = await self.game.passTurn(self.player)
+        await self.game.updateGameMessages(statusMessage)
         self.player.drewCard = False
 
-    async def accept(self, client):
+    async def accept(self):
         if not self.canPlay:
             return
         self.player.state = "card"
-        await self.deleteMessage(client)
-        await self.playCard(client)
+        await self.deleteMessage()
+        await self.playCard()
         self.player.drewCard = False
 
-    async def autoDismiss(self, client):
+    async def autoDismiss(self):
         await asyncio.sleep(10)
         try:
-            await self.dismiss(client)
+            await self.dismiss()
         except:
             pass
 
-    async def playCard(self, client):  #Assumes card is valid
+    async def playCard(self):  #Assumes card is valid
         self.canPlay = False
         card = self.cards[-1]
-        self.game.playCard(client, self.player, card)
-        await self.dismiss(client)
+        self.game.playCard(self.player, card)
+        await self.dismiss()
