@@ -4,23 +4,18 @@ import asyncio
 import logging
 
 import discord
-import discord.ext
+import discord
 from discord_slash import SlashCommand
 from discord_slash.utils import manage_commands
 
 import client.backgroundTasks as backgroundTasks
 import client.commands as commands
 import client.reactions as reactions
-from storage.globalVariables import openLobbies, reactionMessageIDs
+from storage.globalVariables import openLobbies, reactionMessageIDs, client
 
 TOKEN = open("storage\TOKEN.token", "r").readline()
 
-
 logging.basicConfig(level=logging.INFO)
-
-
-
-client = discord.ext.commands.Bot(command_prefix = "u!")
 
 client.remove_command('help')  #Remove the deafult help command
 
@@ -34,7 +29,7 @@ guild_ids = [764385563289452545, 766488291934470184]
 
 @client.command()
 async def start(ctx):
-    await commands.start(ctx, client)
+    await commands.start(ctx)
 
 
 
@@ -42,7 +37,7 @@ async def start(ctx):
 async def on_slash_command_error(ctx, ex):
     print(f"Exception:\n {ex} \nin channel {ctx.channel.name}")
 
-@slash.slash(name="ping", guild_ids=guild_ids)
+@slash.slash(name="ping")
 async def ping(ctx): # Defines a new "context" (ctx) command called "ping."
     await commands.ping(ctx, client.latency)
 
@@ -68,71 +63,47 @@ async def help(ctx, argCommand="main"): # Defines a new "context" (ctx) command 
     await commands.help(ctx, argCommand, client)
 
 @slash.slash(name="foo", 
-    guild_ids=guild_ids, 
     description="A development command."
 )
 
 async def foo(ctx): # Defines a new "context" (ctx) command called "foo."
     await commands.fooTest(ctx)
 
-@slash.slash(name="join", 
-    guild_ids=guild_ids, 
+@slash.slash(name="join",  
     description="Join a game lobby",
 )
 async def join(ctx): # Defines a new "context" (ctx) command called "ping."
     await commands.join(ctx)
 
 @slash.slash(name="leave", 
-    guild_ids=guild_ids, 
     description="Leave a game lobby",
 )
 async def leave(ctx): # Defines a new "context" (ctx) command called "ping."
-    await commands.leave(ctx, client)
+    await commands.leave(ctx)
 
 @slash.slash(name="lobby", 
-    guild_ids=guild_ids, 
     description="View a game lobby",
 )
 async def lobby(ctx): # Defines a new "context" (ctx) command called "ping."
-    await commands.lobby(ctx, client)
+    await commands.lobby(ctx)
 
 @slash.slash(name="start", 
-    guild_ids=guild_ids, 
     description="Start a game",
 )
 async def start(ctx): # Defines a new "context" (ctx) command called "ping."
-    await commands.start(ctx, client)
+    await commands.start(ctx)
     
-
-
-
-
-
 
 
 
 ####End slash commands####
 
-#@client.event
+@client.event
 async def on_message(message):
     if message.content.startswith(f"<@!{client.user.id}>"):  #Starts an interactive help command
-        await commands.help(message, client)      
-
-#@client.command(name="foo")
-async def foo(ctx):
-    await commands.fooTest(ctx.message)
-
-#@client.command(name="prefix")
-async def prefix(ctx):
-    await commands.prefixCommand(ctx.message)
-
-#@client.command(name="help", aliases=["h"])
-async def help(ctx):
-    await commands.help(ctx.message, client)
-
-#@client.event
-
-#Responds to message
+        await commands.help(message)   
+    if message.content.startswith("u!start"):
+        await commands.start(message)
 
 @client.event
 async def on_raw_reaction_add(payload):  #When reaction added
@@ -156,11 +127,15 @@ async def reactionUpdate(emoji, message, user):  #Function called on every react
     if not message.id in reactionMessageIDs.keys():  #If the message isn't in the dictionary of reaction event messages
         return
     elif reactionMessageIDs[message.id].type == "help":
-        await reactions.help(emoji, message, user, client)
+        await reactions.help(emoji, message, user)
     elif reactionMessageIDs[message.id].type == "hand":
-        await reactions.hand(emoji, message, user, client)
+        await reactions.hand(emoji, message, user)
     elif reactionMessageIDs[message.id].type == "wild":
-        await reactions.wild(emoji, message, user, client)
+        await reactions.wild(emoji, message, user)
+    elif reactionMessageIDs[message.id].type == "stack":
+        await reactions.stack(emoji, message, user)
+    elif reactionMessageIDs[message.id].type == "draw":
+        await reactions.draw(emoji, message, user)
 
 @client.event
 #Bot has joined, says which servers/guilds
@@ -169,7 +144,7 @@ async def on_ready():
     print(f'{client.user} is connected to the following guilds:')
     async for guild in client.fetch_guilds(limit=150):
         print(guild.name)
-    client.availabilityCheck = client.loop.create_task(backgroundTasks.checkChannelAvailability(client))
+    client.availabilityCheck = client.loop.create_task(backgroundTasks.checkChannelAvailability())
     
 
 async def my_background_task():
@@ -179,7 +154,5 @@ async def my_background_task():
             counter += 1
             await channel.send(counter)
             await asyncio.sleep(1) # task runs every 1 second
-
-
 
 client.run(TOKEN)

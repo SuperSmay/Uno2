@@ -1,14 +1,14 @@
 import discord
-from storage.globalVariables import openGames, openLobbies, playersInGame, playersInLobby, channelInGame, channelHasLobby, playerInGame, playerInLobby
+from storage.globalVariables import openGames, openLobbies, playersInGame, playersInLobby, channelInGame, channelHasLobby, playerInGame, playerInLobby, client
 from client.messageClasses import HelpMessage
 from client.game import GameLobby, Game
     
 async def fooTest(ctx):
     await ctx.send(">>> bar")
 
-async def help(ctx, argCommand, client):  #Help command
+async def help(ctx, argCommand):  #Help command
     helpMessageObject = HelpMessage(ctx, argCommand)  #Creates a new help object for the message
-    await helpMessageObject.sendMessage(ctx, client)  #Sends the message from the object
+    await helpMessageObject.sendMessage(ctx)  #Sends the message from the object
 
 async def ping(ctx, latency):
     await ctx.send(f"Pong! {round(latency*1000, 2)}ms")  #Calculates the client ping     
@@ -28,7 +28,7 @@ async def join(ctx):
     openLobbies[ctx.channel.id].playerJoin(ctx.author.id)  #Gets the lobby object from the dictionary and calls playerJoin with the author ID
     await ctx.send(f"{ctx.author.name} has joined the lobby. {lobbyCount(ctx.channel.id)}")  #Send join message
 
-async def leave(ctx, client):
+async def leave(ctx):
     if playerInLobby(ctx.author.id):  #If player in lobby
         if playersInLobby[ctx.author.id] == ctx.channel.id:  #If the channelID the message was sent in matches the ID of the lobby
             await ctx.send(f"You left the lobby. {lobbyCount(ctx.channel.id, - 1)}")  #Prints lobby leave message and the count message minus 1. Count is minus one because it runs before the user is actually removed
@@ -42,11 +42,11 @@ async def leave(ctx, client):
         else: 
             await ctx.send("You left the game.")
             await client.get_channel(playersInLobby[ctx.author.id]).send(f"{ctx.author.name} left the game.")
-        await openGames[playersInGame[ctx.author.id]].playerLeave(ctx.author.id, client)  #Gets the game object from the dictionary and calls playerLeave with the author ID
+        await openGames[playersInGame[ctx.author.id]].playerLeave(ctx.author.id)  #Gets the game object from the dictionary and calls playerLeave with the author ID
     else:
         ctx.send("You are not in a lobby or game.")
 
-async def lobby(ctx, client):
+async def lobby(ctx):
     lobbyEmbed=discord.Embed(title="**Uno2 Lobby**", description=f"This is the lobby for <#{ctx.channel.id}>.", color=0xe32c22)  
     if channelHasLobby(ctx.channel.id):  #If there is a lobby, get all the players in it and list them. If not, then say the lobby is empty
         for playerID in openLobbies[ctx.channel.id].players:
@@ -63,7 +63,7 @@ def lobbyCount(channelID, offset=0):  #Returns a formatted message of the amount
     else:
         return f"There are now {len(openLobbies[channelID].players) + offset} players in the lobby."
 
-async def start(ctx, client):  #Starts the game in the current channel
+async def start(ctx):  #Starts the game in the current channel
     if channelInGame(ctx.channel.id):
         await ctx.send("The game in this channel is already in progress. Switch to a different channel or wait for this game to end.")
         return 
@@ -85,5 +85,5 @@ async def start(ctx, client):  #Starts the game in the current channel
     else:
         game = Game(openLobbies[ctx.channel.id])
         openGames[ctx.channel.id] = game
-        await game.startGame(client)
+        await game.startGame()
         del(openLobbies[ctx.channel.id])

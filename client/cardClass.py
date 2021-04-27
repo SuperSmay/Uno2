@@ -17,9 +17,6 @@ class Card:
         elif self.color == "red": return 15539236
         else: return 4802889
 
-    ##def __eq__(self, card):
-        return (self.face + self.color) == (card.face + card.color)
-
     def __str__(self):
         return f"{self.color} {self.face}"
 

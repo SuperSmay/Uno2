@@ -19,7 +19,7 @@ cardEmoji = {
     "7_green" : "<:seven_green:736430794104504340>",
     "8_green" : "<:eight_green:736430794486186014>",
     "9_green" : "<:nine_green:736430794310025266>",
-    "0_green" : "<:zero_green:736430794146578523>",
+    "0_green" : "<:zero_green:736430794326933546>",
     "skip_green" : "<:skip_green:736433889203060859>",
     "reverse_green" : "<:reverse_green:736430794368614470>",
     "plus2_green" : "<:plus2_green:736430794146578523>",
