@@ -7,7 +7,7 @@ timeInterval = 5  #Time in seconds between each run through of the loop
 
 async def checkChannelAvailability():
     '''
-    Starts the background process to check for deleted or unaccessible channels
+    Starts the background process to check for deleted or unaccessible channels. 
     '''
     print(f"Channel availability background check started. Cycle time is {timeInterval} seconds.")
     while True:  

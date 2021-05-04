@@ -4,14 +4,13 @@ import asyncio
 import logging
 
 import discord
-import discord
 from discord_slash import SlashCommand
 from discord_slash.utils import manage_commands
 
 import client.backgroundTasks as backgroundTasks
 import client.commands as commands
 import client.reactions as reactions
-from storage.globalVariables import openLobbies, reactionMessageIDs, client
+from storage.globalVariables import client, reactionMessageIDs
 
 TOKEN = open("storage\TOKEN.token", "r").readline()
 
@@ -39,7 +38,7 @@ async def on_slash_command_error(ctx, ex):
 
 @slash.slash(name="ping")
 async def ping(ctx): # Defines a new "context" (ctx) command called "ping."
-    await commands.ping(ctx, client.latency)
+    await commands.ping(ctx)
 
 @slash.slash(name="help", 
     description="Displays an interactive help message.",
