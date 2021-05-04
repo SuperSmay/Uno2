@@ -2,6 +2,8 @@
 ![alt text](https://cdn.discordapp.com/attachments/742986384113008712/830589793037451294/UNO_Logo.png "Uno!")
 ## Uno2 is an in development Discord bot that hosts games of Uno. (It will be offline almost all of the time until it's done)
 ---
+#### Disclaimer: 
+  This bot is not complete and has no guarantee of functionality or support. Until the bot is complete it will ask for admin permissions when you add it to your server, this is because I was too lazy to figure out what permissions are needed exactly. Feel free to clone this code and work on it or host it yourself, but you will not get any support from me other than the hosting section of this readme file.
 ### Current features:
   * Creating and starting games
   * Fancy hand messages
@@ -25,7 +27,13 @@
 ### Controls
 Use the arrows ◀ ▶ to cycle one card at a time through your hand, and use the double arrows ⏪ ⏩ to cycle two cards at a time through your hand. Use the dot ⏺ to play a card and the Uno card to draw cards. 
 
-### Special cards
-Coming soon...
+### Hosting
+To host this bot yourself you need a recent version of Python 3 installed, as well as recent versions of the dependencies linked below (and maybe some others I'm too lazy to check just read the error message if one of them is missing). Additionally, you will need a [Discord bot account](https://discordpy.readthedocs.io/en/stable/discord.html#discord-intro). Place the token copied in step 7 in an empty file called `TOKEN.token` inside the storage folder. **When you create the link to add the bot account to your server, make sure to check `aplications.commands`** ![Image](https://discord-py-slash-command.readthedocs.io/en/latest/_images/scope.jpg) Assuming you did all that right and I wrote this guide right, simply run `bot.py`. **You will likely need to wait around an hour for the slash commands to register on Discord.** The bot will not be usuable until this happens. This is a Discord limitation for global slash commands. If you really want to get around this, you can create a list of the guild IDs that you want the bot to work in and add a `guild_ids = {list of guild_ids}` field to the declaration for *each* slash command you want, right after the name. Ex:
+```py
+guild_ids = [123456789, 987654321, 111111111]
+@slash.slash(name="foo", guild_ids = guild_ids
+    description="A development command."
+)
+```
 
-###### Uno2 is written in Python and uses [discord.py](https://discordpy.readthedocs.io/en/stable/) and [discord-py-slash-command](https://pypi.org/project/discord-py-slash-command/) to interact with Discord. Created by Smay#0001
+###### Uno2 is written in Python and uses [discord.py](https://discordpy.readthedocs.io/en/stable/) and [discord-py-slash-command](https://pypi.org/project/discord-py-slash-command/) to interact with Discord. Created by [Smay#0001](https://discordapp.com/users/243759220057571328)
