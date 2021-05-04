@@ -12,7 +12,7 @@
 
 ### In progress features:
   * Jump ins
-  * A better hand system?
+  * A better hand system
 ---
 ## How to use
 1. First, [invite](https://discord.com/api/oauth2/authorize?client_id=736418090627235951&permissions=8&scope=bot%20applications.commands) the bot to your server.
