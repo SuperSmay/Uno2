@@ -123,6 +123,20 @@ class Game:
         else:
             return False
 
+    def validJumpIn(self, card) -> bool:  
+        '''
+        Checks if the card is a valid one to jump in with.\n
+        Parameters:
+            - card: Card; The card to check\n
+        Returns: bool; Whether the card is valid to play or not
+        '''
+        if card.face == self.currentCard.face and card.color == self.currentCard.color:
+            return True
+        elif card.face == self.currentCard.face and card.color == "black":
+            return True
+        else:
+            return False
+
     async def gameWon(self, player) -> None:
         '''
         Ends the game. Deletes all non game message messages, edits the game message to say who won, and removes game from the openGames dict and players from the playersInGame dict.\n
@@ -138,13 +152,13 @@ class Game:
                 - player: Player; The Player object to delete messages from\n
             Returns: None
             '''
-            try: player.handMessage.deleteMessage()
+            try: await player.handMessage.deleteMessage()
             except: pass
-            try: player.wildMessage.deleteMessage()
+            try: await player.wildMessage.deleteMessage()
             except: pass
-            try: player.stackMessage.deleteMessage()
+            try: await player.stackMessage.deleteMessage()
             except: pass
-            try: player.drawMessage.deleteMessage()
+            try: await player.drawMessage.deleteMessage()
             except: pass
 
         self.gameRunning = False
@@ -376,6 +390,59 @@ class Game:
             statusMessage = await self.startWild(player, card)
         else: 
             statusMessage = await self.playCardGeneric(player, card)
+        await self.updateGameMessages(statusMessage)
+
+    async def playCardJumpIn(self, player, card) -> None:  #Assumes valid card
+        '''
+        Plays the given card as a jump in by calling the correct series of functions for that card type.\n
+        #### Assumes that the card is valid.\n
+        Parameters:
+            - player: Player; The player playing the card
+            - card: Card; The card being played\n
+        Returns: None
+        '''
+
+        async def deletePlayingMessages(player) -> None:  
+            '''
+            Trys to delete any messages that may remain from a jumped over player's turn.\n
+            Also sets that players state back to default "card" and sets drewCard to False.\n
+            Parameters:
+                - player: Player; The Player object to delete messages from\n
+            Returns: None
+            '''
+            try: await player.wildMessage.deleteMessage()
+            except: pass
+            try: await player.stackMessage.deleteMessage()
+            except: pass
+            try: await player.drawMessage.deleteMessage()
+            except: pass
+            player.state = "card"
+            player.drewCard = False
+
+
+        oldPlayer = self.players[self.turnIndex]
+        await deletePlayingMessages(oldPlayer)
+        self.turnIndex = self.players.index(player)  #Set the index to the player who just played a jump in
+        if card.face == "skip":
+            await self.playCardGeneric(player, card)
+            statusMessage = await self.skipTurn()
+        elif card.face == "reverse":
+            await self.playCardGeneric(player, card)
+            if len(self.players) <= 2:
+                statusMessage = await self.skipTurn()
+            else:
+                statusMessage = self.updateReverse()
+        elif card.face == "plus2":
+            await self.playCardGeneric(player, card)
+            statusMessage = await self.playPlus2(card)
+        elif card.face == "plus4":
+            statusMessage = await self.startPlus4(player, card)
+        elif card.face == "wild":
+            statusMessage = await self.startWild(player, card)
+        else: 
+            statusMessage = await self.playCardGeneric(player, card)
+        user = await client.fetch_user(player.playerID)
+        statusMessage = f"**{user.name} jumped in!** - {statusMessage}"
         await self.updateGameMessages(statusMessage)
 
     def updateReverse(self) -> str:

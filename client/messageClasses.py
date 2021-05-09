@@ -259,8 +259,11 @@ class HandMessage:
         card = self.player.hand[self.player.selectedIndex]
         print(card)
         if not self.game.players[self.game.turnIndex].playerID == self.player.playerID:
+            if self.game.validJumpIn(card):
+                await self.game.playCardJumpIn(self.player, card)
+                return
             client.loop.create_task(GenericMessage("It's not your turn.", self.player).sendMessage())
-            return
+            return 
         elif not self.game.validCard(card):
             client.loop.create_task(GenericMessage("You can't play that card.", self.player).sendMessage())
             return
@@ -313,8 +316,9 @@ class DrawMessage:
             cardValid = False
             while not cardValid:  #While the card is not a valid one, keep drawing
                 card = self.game.deck.drawCard()
-                self.cards.append(card)
-                if self.game.validCard(card): cardValid = True
+                #self.cards.append(card)
+                self.cards.append(Card("black", "plus4"))
+                cardValid = self.game.validCard(card)
         while count > 0:
             self.cards.append(await self.game.deck.drawCard())
             count -= 1
