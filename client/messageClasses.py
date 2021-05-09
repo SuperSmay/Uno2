@@ -64,7 +64,7 @@ class HelpMessage:  #Class for help command
         await asyncio.sleep(300)  #Waiting for 300 seconds
         self.sentMessage = await self.getSentMessage()  #Get the message object
         await self.sentMessage.edit(embed=await self.currentEmbed(), content="This message is now inactive")  #Edit the message
-        del(globalVariables.reactionMessageIDs[self.sentMessage.id])  #Delete the message from the reaction dictionary
+        del(reactionMessageIDs[self.sentMessage.id])  #Delete the message from the reaction dictionary
 
 class StackMessage:
     def __init__(self, player, game):
@@ -137,6 +137,7 @@ class StackMessage:
         message = await user.fetch_message(self.messageID)
         await message.delete()
         self.player.state = "card"
+        del(reactionMessageIDs[self.sentMessage.id]) 
 
 class WildMessage:
     def __init__(self, player, game):
@@ -166,6 +167,7 @@ class WildMessage:
         user = await client.fetch_user(self.userID)
         message = await user.fetch_message(self.messageID)
         await message.delete()
+        del(reactionMessageIDs[self.sentMessage.id]) 
 
     async def pickColor(self, color):
         self.player.state = "card"
@@ -203,6 +205,7 @@ class Plus4Message:
         user = await client.fetch_user(self.userID)
         message = await user.fetch_message(self.messageID)
         await message.delete()
+        del(reactionMessageIDs[self.sentMessage.id]) 
 
     async def pickColor(self, color):
         self.player.state = "card"
@@ -283,6 +286,7 @@ class HandMessage:
         user = await client.fetch_user(self.userID)
         message = await user.fetch_message(self.messageID)
         await message.delete()
+        del(reactionMessageIDs[self.sentMessage.id]) 
 
 class GenericMessage:
     def __init__(self, content, player):
@@ -360,6 +364,7 @@ class DrawMessage:
         user = await client.fetch_user(self.userID)
         message = await user.fetch_message(self.messageID)
         await message.delete()
+        del(reactionMessageIDs[self.sentMessage.id]) 
 
     async def dismiss(self):
         self.player.state = "card"
