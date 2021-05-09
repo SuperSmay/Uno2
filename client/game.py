@@ -72,7 +72,7 @@ class Game:
             '''
             playerList = []
             index = self.turnIndex
-            for [player] in self.players:  #Creates a list of the players names who are in a game
+            for player in self.players:  #Creates a list of the players names who are in a game
                 user = await client.fetch_user(player.playerID)
                 userName = user.name
                 completeLine = f"{userName} - Cards: {str(len(player.hand))}"
@@ -88,6 +88,8 @@ class Game:
         if isDM:  #If the message is being sent in a DM, the description is changed
             if self.players[self.turnIndex].playerID == player.playerID:  #If its the current players turn, then change the message to say that
                 turnStatus = "**It's your turn!**"
+                turnMessage = messageClasses.GenericMessage(f"<@{player.playerID}>, it's your turn!", player)
+                client.loop.create_task(turnMessage.sendMessage())
         if not self.gameRunning: description = f"**Players:**\n{await playerListString()}\n\n{statusMessage}"
         else: description = f"**Players:**\n{await playerListString()}\n\n{statusMessage}\n\n{turnStatus}"
         embed = discord.Embed(title = f"Uno2 game in <#{self.channelID}>", description = description, color = self.currentCard.colorCode)  #Create embed
@@ -131,7 +133,7 @@ class Game:
 
         async def deleteAllMessages(player) -> None:  
             '''
-            Trys to delete any messages that may remain\n
+            Trys to delete any messages that may remain.\n
             Parameters:
                 - player: Player; The Player object to delete messages from\n
             Returns: None
@@ -358,10 +360,13 @@ class Game:
         '''
         if card.face == "skip":
             await self.playCardGeneric(player, card)
-            statusMessage = await self.game.skipTurn()
+            statusMessage = await self.skipTurn()
         elif card.face == "reverse":
             await self.playCardGeneric(player, card)
-            statusMessage = self.updateReverse()
+            if len(self.players) <= 2:
+                statusMessage = await self.skipTurn()
+            else:
+                statusMessage = self.updateReverse()
         elif card.face == "plus2":
             await self.playCardGeneric(player, card)
             statusMessage = await self.playPlus2(card)
@@ -499,7 +504,7 @@ class Stack:
         self.recentCard == card
 
     async def endStack(self):
-        self.game.players[self.game.turnIndex].drawCard(count = self.amount, drawToMatch = False, canPlay = False)
+        await self.game.players[self.game.turnIndex].drawCard(count = self.amount, drawToMatch = False, canPlay = False)
         self.game.incrementTurn()
         self.game.stackActive = False
 class Deck:

@@ -137,7 +137,7 @@ class StackMessage:
         message = await user.fetch_message(self.messageID)
         await message.delete()
         self.player.state = "card"
-        del(reactionMessageIDs[self.sentMessage.id]) 
+        del(reactionMessageIDs[self.messageID]) 
 
 class WildMessage:
     def __init__(self, player, game):
@@ -167,12 +167,12 @@ class WildMessage:
         user = await client.fetch_user(self.userID)
         message = await user.fetch_message(self.messageID)
         await message.delete()
-        del(reactionMessageIDs[self.sentMessage.id]) 
+        del(reactionMessageIDs[self.messageID]) 
 
     async def pickColor(self, color):
         self.player.state = "card"
         client.loop.create_task(self.deleteMessage())
-        card = Card(color = color, face = "wild", isColorChoice = False, returnable = False)
+        card = Card(color = color, face = "wild", returnable = False)
         print(vars(card))
         statusMessage = await self.game.endWild(self.player, card = card)  #TODO - Change to not call play card please god
         await self.game.updateGameMessages(statusMessage)
@@ -205,12 +205,12 @@ class Plus4Message:
         user = await client.fetch_user(self.userID)
         message = await user.fetch_message(self.messageID)
         await message.delete()
-        del(reactionMessageIDs[self.sentMessage.id]) 
+        del(reactionMessageIDs[self.messageID]) 
 
     async def pickColor(self, color):
         self.player.state = "card"
         client.loop.create_task(self.deleteMessage())
-        card = Card(color = color, face = "plus4", isColorChoice = False, returnable = False)
+        card = Card(color = color, face = "plus4", returnable = False)
         print(vars(card))
         statusMessage = await self.game.endPlus4(self.player, card = card)  #TODO - Change to not call play card please god
         await self.game.updateGameMessages(statusMessage)
@@ -286,7 +286,7 @@ class HandMessage:
         user = await client.fetch_user(self.userID)
         message = await user.fetch_message(self.messageID)
         await message.delete()
-        del(reactionMessageIDs[self.sentMessage.id]) 
+        del(reactionMessageIDs[self.messageID]) 
 
 class GenericMessage:
     def __init__(self, content, player):
@@ -364,7 +364,7 @@ class DrawMessage:
         user = await client.fetch_user(self.userID)
         message = await user.fetch_message(self.messageID)
         await message.delete()
-        del(reactionMessageIDs[self.sentMessage.id]) 
+        del(reactionMessageIDs[self.messageID]) 
 
     async def dismiss(self):
         self.player.state = "card"
@@ -377,7 +377,6 @@ class DrawMessage:
         if not self.canPlay:
             return
         self.player.state = "card"
-        await self.deleteMessage()
         await self.playCard()
         self.player.drewCard = False
 
@@ -391,5 +390,5 @@ class DrawMessage:
     async def playCard(self):  #Assumes card is valid
         self.canPlay = False
         card = self.cards[-1]
-        self.game.playCard(self.player, card)
+        await self.game.playCard(self.player, card)
         await self.dismiss()
