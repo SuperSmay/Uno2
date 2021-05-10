@@ -1,4 +1,4 @@
-
+#bot.py
 
 import asyncio
 import logging
@@ -43,7 +43,7 @@ async def ping(ctx): # Defines a new "context" (ctx) command called "ping."
 @slash.slash(name="help", 
     description="Displays an interactive help message.",
     options=[manage_commands.create_option(
-        name = "Command",   
+        name = "command",   
         description = "Command to get help for",
         option_type = 3,
         required = False,
@@ -71,25 +71,25 @@ async def foo(ctx): # Defines a new "context" (ctx) command called "foo."
 @slash.slash(name="join",  
     description="Join a game lobby",
 )
-async def join(ctx): # Defines a new "context" (ctx) command called "ping."
+async def join(ctx): # Defines a new "context" (ctx) command called "join."
     await commands.join(ctx)
 
 @slash.slash(name="leave", 
     description="Leave a game lobby",
 )
-async def leave(ctx): # Defines a new "context" (ctx) command called "ping."
+async def leave(ctx): # Defines a new "context" (ctx) command called "leave."
     await commands.leave(ctx)
 
 @slash.slash(name="lobby", 
     description="View a game lobby",
 )
-async def lobby(ctx): # Defines a new "context" (ctx) command called "ping."
+async def lobby(ctx): # Defines a new "context" (ctx) command called "lobby."
     await commands.lobby(ctx)
 
 @slash.slash(name="start", 
     description="Start a game",
 )
-async def start(ctx): # Defines a new "context" (ctx) command called "ping."
+async def start(ctx): # Defines a new "context" (ctx) command called "start."
     await commands.start(ctx)
     
 
