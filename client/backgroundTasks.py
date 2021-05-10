@@ -35,4 +35,4 @@ async def checkChannelAvailability():
                 del(openGamesPruned[item])
                 openGames = openGamesPruned.copy()
         await asyncio.sleep(timeInterval)  #Async sleep doesn't block, and simply just waits in the background
-
+        
