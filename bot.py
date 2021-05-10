@@ -12,7 +12,7 @@ import client.commands as commands
 import client.reactions as reactions
 from storage.globalVariables import client, reactionMessageIDs
 
-TOKEN = open("storage/eTOKEN.token", "r").readline()
+TOKEN = open("storage/TOKEN.token", "r").readline()
 
 logging.basicConfig(level=logging.INFO)
 
