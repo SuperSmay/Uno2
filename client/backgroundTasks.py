@@ -2,7 +2,6 @@ import discord
 import asyncio
 from storage.globalVariables import openLobbies, openGames, reactionMessageIDs, client
 
-
 timeInterval = 5  #Time in seconds between each run through of the loop
 
 async def checkChannelAvailability():
