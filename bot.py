@@ -150,7 +150,6 @@ async def my_background_task():
         counter = 0
         channel = client.get_channel(764386772658028605) # channel ID goes here
         while not client.is_closed():
-            counter += 1
             await channel.send(counter)
             await asyncio.sleep(1) # task runs every 1 second
 
