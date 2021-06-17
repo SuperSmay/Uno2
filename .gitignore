@@ -4,3 +4,4 @@ storage/__pycache__
 storage/TOKEN.token
 .vscode
 test scripts
+storage/channelRulesets.json
